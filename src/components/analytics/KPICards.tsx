@@ -1,0 +1,126 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { createClient } from '@/utils/supabase/client'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { DollarSign, Users, Target, Zap } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
+
+interface KPIStats {
+    totalRevenue: number
+    activeDeals: number
+    totalPipelineValue: number
+    conversionRate: number
+}
+
+export function KPICards() {
+    const [stats, setStats] = useState<KPIStats | null>(null)
+    const [isLoading, setIsLoading] = useState(true)
+    const supabase = createClient()
+
+    useEffect(() => {
+        async function fetchStats() {
+            try {
+                setIsLoading(true)
+
+                // 1. Total Revenue (Paid Invoices)
+                const { data: invoices } = await supabase
+                    .from('invoices')
+                    .select('total')
+                    .eq('status', 'Paid')
+
+                const totalRevenue = invoices?.reduce((sum, inv) => sum + inv.total, 0) || 0
+
+                // 2. Active Deals (Clients not in Won/Lost - assuming stages 1-10 are active, 11 won, 12 lost based on standard flow)
+                // Let's count all clients weighted by stage
+                const { data: clients } = await supabase
+                    .from('clients')
+                    .select('deal_value, stage')
+
+                const activeDeals = clients?.filter(c => c.stage < 11).length || 0
+                const totalPipelineValue = clients?.filter(c => c.stage < 11).reduce((sum, c) => sum + (c.deal_value || 0), 0) || 0
+
+                // 3. Conversion Rate (Clients in stage 11 vs total)
+                const wonDeals = clients?.filter(c => c.stage === 11).length || 0
+                const totalFinished = clients?.filter(c => c.stage >= 11).length || 0
+                const conversionRate = totalFinished > 0 ? (wonDeals / totalFinished) * 100 : 0
+
+                setStats({
+                    totalRevenue,
+                    activeDeals,
+                    totalPipelineValue,
+                    conversionRate
+                })
+            } catch (error) {
+                console.error('Error fetching KPI stats:', error)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+
+        fetchStats()
+    }, [])
+
+    if (isLoading) {
+        return (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {[...Array(4)].map((_, i) => (
+                    <Card key={i}>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <Skeleton className="h-4 w-[100px]" />
+                        </CardHeader>
+                        <CardContent>
+                            <Skeleton className="h-8 w-[60px]" />
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        )
+    }
+
+    const items = [
+        {
+            title: "Total Revenue",
+            value: `$${(stats?.totalRevenue || 0).toLocaleString()}`,
+            icon: DollarSign,
+            description: "Collected from paid invoices"
+        },
+        {
+            title: "Pipeline Value",
+            value: `$${(stats?.totalPipelineValue || 0).toLocaleString()}`,
+            icon: Target,
+            description: "Potential from active deals"
+        },
+        {
+            title: "Active Deals",
+            value: stats?.activeDeals || 0,
+            icon: Users,
+            description: "Deals currently in progress"
+        },
+        {
+            title: "Conversion Rate",
+            value: `${Math.round(stats?.conversionRate || 0)}%`,
+            icon: Zap,
+            description: "Success rate of closed deals"
+        }
+    ]
+
+    return (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {items.map((item, i) => (
+                <Card key={i} className="border-none shadow-sm bg-card hover:bg-muted/50 transition-colors">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">{item.title}</CardTitle>
+                        <item.icon className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{item.value}</div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            {item.description}
+                        </p>
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+    )
+}

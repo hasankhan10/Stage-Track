@@ -1,0 +1,26 @@
+
+> stage-track@0.1.0 build
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+✓ Compiled successfully in 14.2s
+  Running TypeScript ...
+  Collecting page data using 11 workers ...
+Error: Missing API key. Pass it to the constructor `new Resend("re_123")`
+    at new et (M:\Stage Track\.next\server\chunks\[root-of-the-server]__55b9e8f9._.js:6:28183)
+    at module evaluation (M:\Stage Track\.next\server\chunks\[root-of-the-server]__e7ac23a8._.js:1:1405)
+    at instantiateModule (M:\Stage Track\.next\server\chunks\[turbopack]_runtime.js:740:9)
+    at instantiateRuntimeModule (M:\Stage Track\.next\server\chunks\[turbopack]_runtime.js:768:12)
+    at getOrInstantiateRuntimeModule (M:\Stage Track\.next\server\chunks\[turbopack]_runtime.js:781:12)
+    at Object.m (M:\Stage Track\.next\server\chunks\[turbopack]_runtime.js:790:18)
+    at Object.<anonymous> (M:\Stage Track\.next\server\app\api\invoices\[id]\send\route.js:9:3)
+
+> Build error occurred
+Error: Failed to collect page data for /api/invoices/[id]/send
+    at ignore-listed frames {
+  type: 'Error'
+}
