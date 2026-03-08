@@ -1,0 +1,590 @@
+--- Page 1 ---
+StageTrack AI Prompt    Page 1
+STAGETRACK
+ Complete AI Build Prompt
+ End-to-End Client Management Platform
+ 
+ Paste this document in full into your AI IDE.
+Build each section in order. Do not skip steps.
+ March 2026  v1.0  Confidential
+ 
+--- Page 2 ---
+StageTrack AI Prompt    Page 2
+→
+How To Use This Document
+This document is a complete build specification and AI prompt for StageTrack. It is designed to be pasted
+directly into your AI IDE (such as Google's AI coding assistant). The AI will read the full spec and generate
+the complete application code.
+Instructions:
+  Open your AI IDE and start a new project
+  Paste the entire contents of this PDF as your initial prompt
+  The AI will scaffold the project structure, database schema, and all pages
+  After scaffolding, use follow-up prompts from each section to build feature by feature
+  Follow the Build Order in Section 8 — do not jump ahead
+  After each step, test in the browser before moving to the next
+CRITICAL RULE
+Do not modify the tech stack listed in Section 2. Every technology choice is deliberate. Substituting libraries
+mid-build breaks compatibility between sections.
+If the AI suggests an alternative library, decline and redirect it back to the specified stack.
+01
+Master Prompt — Paste This First
+Copy everything inside the box below and paste it as your first message in the AI IDE. This gives the AI its
+full context before you start building.
+MASTER PROMPT — COPY EXACTLY AS WRITTEN:
+You are a senior full-stack software engineer. Build a complete, production-ready web
+application called StageTrack — an end-to-end client management platform for a service-based
+agency. StageTrack manages the full lifecycle of every client relationship, from the first
+cold outreach message all the way through project delivery and ongoing retainer management.
+It gives the agency owner a clear pipeline view of every lead and client at all times, gives
+team members their task assignments, and gives clients a read-only progress page they can
+access via a unique link (no login required). Build this as a modern, responsive web
+application with a clean professional UI. Use the tech stack defined in Section 2. Follow
+every specification in this document precisely. Do not add features not listed here. Do not
+skip features that are listed.
+
+--- Page 3 ---
+StageTrack AI Prompt    Page 3
+02
+Technology Stack
+The following stack is fixed. Do not substitute any library. Every choice is optimized for a solo founder
+building a SaaS product fast without sacrificing scalability.
+Layer
+Technology
+Why This Choice
+Frontend
+Framework
+Next.js 14 (App Router)
+React-based, SSR/SSG support, API routes built in
+Styling
+Tailwind CSS + shadcn/ui
+Utility-first CSS, pre-built accessible components
+Database
+Supabase (PostgreSQL)
+Relational DB, real-time, row-level security
+Authentication
+Supabase Auth
+Email/password for admin & team; no auth for clients
+(link-based)
+File Storage
+Supabase Storage
+Per-client file buckets
+Email Sending
+Resend (resend.com)
+Transactional emails — client progress link, notifications
+Payments
+Stripe
+Invoice payment links, webhook for payment confirmation
+Deployment
+Vercel
+Auto-deploy from GitHub, edge network
+State
+Management
+Zustand
+Lightweight global state for UI
+Form Handling
+React Hook Form + Zod
+Type-safe forms with validation
+Prompt to use after pasting master prompt:
+Follow-up Prompt: Tech Stack Setup
+"Initialize a Next.js 14 project with App Router and TypeScript. Install and configure: Tailwind CSS,
+shadcn/ui (with default theme), Supabase JS client (@supabase/supabase-js and @supabase/ssr),
+Zustand, React Hook Form, Zod, Resend, Stripe, @dnd-kit/core, @dnd-kit/sortable, Recharts, and Inter font
+from Google Fonts. Create the folder structure: /app, /components, /lib, /types, /hooks, /utils. Create a
+.env.local file with placeholder variables for: NEXT_PUBLIC_SUPABASE_URL,
+NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY,
+STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, NEXT_PUBLIC_APP_URL."
+
+--- Page 4 ---
+StageTrack AI Prompt    Page 4
+03
+Pipeline Stages (12 Stages)
+StageTrack uses a fixed 12-stage pipeline. Every client record is always in exactly one stage. Stages are
+ordered 1–12. Moving a client to a lower-numbered stage is allowed (e.g. re-opening a lost deal).
+#
+Stage Name
+Status
+Group
+What It Means
+1
+Cold Outreach
+Lead
+First contact sent. Email / DM / LinkedIn / call logged.
+2
+Follow-Up
+Lead
+2nd or 3rd touch. No reply yet. Follow-up reminder set.
+3
+Discovery Call
+Prospect
+First conversation scheduled or completed.
+4
+Proposal Sent
+Prospect
+Scope, pricing, timeline sent to client.
+5
+Negotiation
+Prospect
+Active back-and-forth on price, scope, or timeline.
+6
+Contract Signed
+Client
+Deal closed. Formal agreement confirmed.
+7
+Onboarding
+Client
+Kickoff done. Access shared. Onboarding checklist triggered.
+8
+In Progress
+Client
+Active project work. Milestones being tracked.
+9
+Review / Feedback
+Client
+Deliverable shared. Awaiting client response.
+1
+0
+Delivered
+Client
+Final delivery confirmed. Invoice sent.
+1
+1
+Retainer / Upsell
+Client
+Ongoing relationship or new project offered.
+1
+2
+Churned / Lost
+Archived
+Deal lost or client ended relationship. Read-only record.
+Prompt to use for pipeline setup:
+Follow-up Prompt: Pipeline Configuration
+"Create a constants file at /lib/pipeline.ts that exports: (1) PIPELINE_STAGES: an array of 12 objects with
+fields { id: number, name: string, statusGroup: 'Lead'|'Prospect'|'Client'|'Archived', description: string, color:
+string }. Use these colors — Lead: #3498DB, Prospect: #E67E22, Client: #27AE60, Archived: #95A5A6. (2)
+A helper function getStageById(id: number). (3) A helper function getStageGroup(id: number). This file will
+be imported throughout the app."
+
+--- Page 5 ---
+StageTrack AI Prompt    Page 5
+04
+Database Schema
+All tables live in Supabase (PostgreSQL). Enable Row Level Security on every table immediately after
+creation. Generate TypeScript types using the Supabase CLI after all tables are created.
+Table
+Description & Key Fields
+workspace
+Top-level container. Supports future multi-tenant SaaS. Has name, logo, domain.
+users
+Admin and team members. Fields: id, workspace_id, name, email, role (admin | member),
+created_at.
+clients
+Core entity. Fields: id, workspace_id, name, company, email, phone, stage (1–12),
+deal_value, assigned_to (user_id), created_at, updated_at.
+contacts
+Individuals at a client company. A client can have multiple contacts. Fields: id, client_id,
+name, email, phone, role_title.
+outreach_log
+Cold contact attempts. Fields: id, client_id, channel (email|linkedin|phone|dm), date, status
+(sent|opened|replied|no_response), notes.
+tasks
+Work items tied to a client. Fields: id, client_id, assigned_to, title, description, due_date,
+status (todo|in_progress|done), created_at.
+proposals
+Scoped proposals. Fields: id, client_id, title, line_items (JSON), total_value, status
+(draft|sent|viewed|accepted|declined), sent_at.
+contracts
+Agreements. Fields: id, client_id, proposal_id, file_url, status (pending|signed), signed_at.
+invoices
+Billing records. Fields: id, client_id, line_items (JSON), subtotal, tax, total, status
+(unpaid|paid|overdue), stripe_payment_link, paid_at.
+files
+Uploaded documents. Fields: id, client_id, name, file_url, uploaded_by, uploaded_at, category
+(brief|asset|deliverable|contract|other).
+milestones
+Project checkpoints shown in client progress view. Fields: id, client_id, title, description, status
+(pending|complete), due_date, completed_at.
+activity_log
+Auto-generated event trail. Fields: id, client_id, actor_id, action_type, description, metadata
+(JSON), created_at.
+notes
+Internal team notes. Fields: id, client_id, author_id, content, created_at. NOT visible to client.
+client_links
+Unique progress links for clients. Fields: id, client_id, token (UUID), is_active (true until
+stage=Delivered), created_at.
+
+--- Page 6 ---
+StageTrack AI Prompt    Page 6
+Prompt to use for database creation:
+Follow-up Prompt: Database Schema
+"Write the complete Supabase SQL migration to create all StageTrack tables. Include: all columns with
+correct data types, primary keys (UUID default gen_random_uuid()), foreign keys with ON DELETE
+CASCADE where appropriate, created_at and updated_at columns with auto-update triggers, indexes on:
+client_id (all child tables), assigned_to (tasks), status (proposals, invoices), stage (clients), token
+(client_links, proposals). After the CREATE TABLE statements, write RLS policies: (1) workspace isolation
+— users can only access rows where workspace_id matches their workspace, (2) member isolation — for
+clients table, members can only see rows where assigned_to = auth.uid(), (3) public tables — client_links
+and proposals are readable without auth (for public pages) but only by matching token. Output the complete
+SQL ready to paste into Supabase SQL editor."
+05
+Core Features — P0 (Build First)
+These features must exist before anything else. They form the backbone of StageTrack.
+Pipeline Board (Kanban)
+  Full-width Kanban board with one column per stage (12 columns total)
+  Each card shows: client name, company, deal value, assigned team member avatar, days in current
+stage, last activity label
+  Drag and drop cards between columns — auto-logs the stage change in activity_log
+  Click any card to open the full Client Profile panel (right-side drawer)
+  Filter bar: filter by assigned team member, status group (Lead/Prospect/Client/Archived), date range
+  Search bar: real-time search by client name or company
+  Quick-add button ('+' icon) at top of any column to create a new client in that stage
+  Stage column headers show count of clients and total deal value in that stage
+Client Profile Page
+  Full detail page for each client at /clients/[id]
+  Header section: name, company, stage badge (colored), deal value, assigned member, created date
+  Tabs: Overview | Tasks | Outreach | Proposals | Contracts | Invoices | Files | Notes | Activity
+  Overview tab: contact info, company details, key dates, quick stats (total billed, tasks done, days as
+client)
+  All tab data loads lazily — only fetch when tab is clicked
+  Stage change dropdown in header — changing stage auto-logs to activity_log and sends notification
+
+--- Page 7 ---
+StageTrack AI Prompt    Page 7
+  Edit button to update client details inline (no separate edit page needed)
+Client Progress Link (No Login Required)
+  When a client record is created OR when admin clicks 'Send Progress Link', generate a UUID token
+stored in client_links table
+  Email is sent via Resend to the client's email with a link: https://stagetrack.app/progress/[token]
+  The /progress/[token] page is fully public — no auth required to view
+  Page shows: StageTrack branding + agency logo, client/project name, visual progress bar (stage 1–11,
+0% to 100%), current stage name and description, list of milestones with status indicators
+(pending/complete), list of shared files (download only), latest invoice status (Paid / Unpaid / No invoice
+yet)
+  Page does NOT show: deal value, internal notes, other clients, team member names, outreach history
+  Link stays active until client stage is moved to 'Delivered' (stage 10) — then is_active = false
+  When link is inactive, page shows: 'Your project has been delivered. Thank you for working with us.'
+  Admin can manually deactivate or regenerate the link at any time from the client profile
+  Page auto-refreshes data every 60 seconds (no manual reload needed)
+Authentication & Roles
+  Admin and team members log in via email + password (Supabase Auth)
+  Role: admin — full access to all clients, settings, billing, team management
+  Role: member — can only see clients assigned to them; cannot access settings or billing
+  Row-Level Security (RLS) enforced at the database level via Supabase policies
+  First user to register in a workspace is automatically assigned admin role
+  Admin can invite team members via email — they receive a signup link
+  Password reset via email (Supabase built-in flow)
+  Session persists for 7 days, then requires re-login
+Follow-up Prompt: P0 Features
+"Build the Pipeline Board at /pipeline. Use @dnd-kit/core for drag and drop. Render 12 columns, one per
+stage. Each column header shows stage name, client count, and total deal value. Each client card shows:
+full name, company name, deal value (formatted as currency), assigned team member avatar (first initial in
+colored circle), days in current stage, and a colored status badge. Cards are draggable between columns.
+On drop, update the client's stage in Supabase and insert an activity_log record. Add a filter bar above the
+board with: team member filter, status group filter (Lead/Prospect/Client/Archived), search input. Add a '+'
+button at the top of each column that opens a drawer to create a new client in that stage."
+
+--- Page 8 ---
+StageTrack AI Prompt    Page 8
+06
+Standard Features — P1 (Build Second)
+Build these after all P0 features are working and tested.
+Task Management
+  Create tasks from the client profile Tasks tab
+  Fields: title, description, assigned_to (team member), due_date, status
+  Task statuses: To Do → In Progress → Done
+  Team members see their tasks across all clients in a 'My Tasks' page (/tasks)
+  My Tasks page shows tasks grouped by: Overdue, Due Today, This Week, Later
+  Completing a task auto-logs to activity_log
+  Task count badge shows on client card in pipeline (overdue tasks shown in red)
+Outreach Tracker
+  Log outreach attempts from the client Outreach tab
+  Fields: channel (Email / LinkedIn / Phone / DM / Other), date, status, notes, follow-up date
+  Status options: Sent, Opened, Replied, No Response, Bounced
+  If follow-up date is set, a reminder notification fires on that date
+  Outreach summary on Overview tab: total attempts, last contact date, last status
+  Bulk view on /outreach page: see all follow-ups due today across all clients
+Proposal Builder
+  Create proposals from client profile Proposals tab
+  Fields: proposal title, line items (service name + description + price), discount, tax, total
+(auto-calculated)
+  Preview renders a clean PDF-style view inside the browser
+  Send to client via email (Resend) — email includes a link to view the proposal at /proposals/[token]
+  Proposal view page is public (no login) — shows your branding, line items, total, and Accept / Decline
+buttons
+  On Accept: status updates to 'accepted', activity_log entry created, admin gets email notification
+  On Decline: status updates to 'declined', admin gets email notification with optional client message
+  Accepted proposal auto-moves client stage to 'Contract Signed' (stage 6) if currently in Negotiation
+
+--- Page 9 ---
+StageTrack AI Prompt    Page 9
+Invoice & Payments
+  Create invoices from client profile Invoices tab
+  Fields: line items (description + amount), subtotal, tax %, discount, total
+  Generate a Stripe payment link via Stripe API and store in invoice record
+  Send invoice to client via email — includes Stripe payment link
+  Invoice statuses: Unpaid, Paid, Overdue (auto-set if due_date passed and still unpaid)
+  Stripe webhook: on payment success, update invoice status to Paid, log to activity_log, notify admin
+  Invoice list on client profile shows all invoices with status badges
+  Revenue summary widget on dashboard: Total Billed, Total Collected, Outstanding
+File Management
+  Upload files from client profile Files tab
+  File categories: Brief, Asset, Deliverable, Contract, Other
+  Files stored in Supabase Storage in a per-client bucket path: /workspace_id/client_id/filename
+  Display file list with: name, category, uploaded by, upload date, file size, download button
+  Files shared to client (visible on progress page): toggle per file — 'Share with client' checkbox
+  Only files marked as shared appear on the /progress/[token] page
+  Delete file option (admin only) — soft delete (mark as deleted, not removed from storage immediately)
+Notification System
+  In-app notification bell (top-right of navbar) — shows unread count badge
+  Notification types: stage moved, task overdue, follow-up due today, proposal accepted/declined,
+invoice paid, new team member joined
+  Email notifications for: proposal accepted, invoice paid, contract signed (Resend)
+  Notification preferences page: admin can toggle email notifications on/off per type
+  Mark notifications as read individually or 'Mark all as read'
+  Notifications stored in DB — persist across sessions
+
+--- Page 10 ---
+StageTrack AI Prompt    Page 10
+Follow-up Prompt: Client Progress Link
+"Build the client progress link system. (1) Create a generateClientLink(clientId) server action that: inserts a
+record into client_links with a UUID token, sends an email via Resend to the client's email containing the link
+https://[NEXT_PUBLIC_APP_URL]/progress/[token] with a professional HTML email template showing the
+StageTrack logo and a clear CTA button. (2) Build the /progress/[token] page as a Next.js public page (no
+auth middleware). The page fetches client data via /api/client-link/[token]. Display: agency logo, project
+name, animated progress bar (stage number / 11 * 100%), current stage name and description, milestone
+list with check icons, shared files list with download buttons, invoice status. Add auto-refresh every 60
+seconds using setInterval. On mobile this page must be fully readable. Add meta noindex tag. (3) In the API
+route, check is_active = true before returning data. If inactive, return { delivered: true }. The page then
+shows the delivery confirmation message."
+07
+Growth Features — P2 (Build Third)
+Build these once P0 and P1 are stable. These are what make StageTrack sellable as a SaaS product.
+Onboarding Checklist
+  When a client moves to stage 7 (Onboarding), a default onboarding checklist is auto-created as tasks
+  Default checklist items: Send welcome email, Schedule kickoff call, Share access credentials, Confirm
+project scope, Add client to project tools
+  Admin can customize the default checklist in Settings
+  Checklist progress shown as a progress bar on client Overview tab
+Analytics Dashboard
+  Main dashboard page (/) shows: Pipeline summary (total leads, prospects, clients by count and value),
+Monthly revenue chart (bar chart — invoices paid per month), Conversion funnel (% moved from each
+stage to next), Top clients by deal value, Tasks due today and overdue count
+  All charts built with Recharts library
+  Date range filter: Last 30 days / Last 90 days / Last 12 months / All time
+Settings Page
+  Workspace settings: name, logo upload, primary color
+  Team management: invite new member, view all members, change roles, remove members
+  Notification preferences: toggle email notifications per type
+
+--- Page 11 ---
+StageTrack AI Prompt    Page 11
+  Pipeline stage labels: admin can rename stages (custom labels stored per workspace)
+  Onboarding checklist template: edit default task items
+  Billing section: placeholder for SaaS subscription management (future feature)
+08
+Build Order — Follow This Exactly
+Build in this exact sequence. Each step depends on the previous. Do not jump ahead or combine steps.
+Step 1
+Project Setup
+Init Next.js 14 project. Install Tailwind, shadcn/ui, Supabase client, Zustand, React
+Hook Form, Zod, Resend SDK, Stripe SDK. Set up environment variables. Connect
+Supabase project.
+Step 2
+Database
+Schema
+Create all tables in Supabase: workspace, users, clients, contacts, outreach_log,
+tasks, proposals, contracts, invoices, files, milestones, activity_log, notes,
+client_links. Enable RLS on all tables. Write RLS policies for admin and member
+roles.
+Step 3
+Auth Flow
+Build /login page. Implement Supabase Auth. Create middleware to protect all
+routes except /progress/* and /proposals/*. Build team invite flow (/invite/[token]).
+Step 4
+Layout &
+Navigation
+Build the main app layout: collapsible sidebar, top navbar with search + notifications
++ avatar. Build mobile-responsive bottom nav. Set up route groups for (app) and
+(public) layouts.
+Step 5
+Pipeline Board
+Build /pipeline Kanban with drag-and-drop (use @dnd-kit/core). Implement stage
+columns, client cards, filters, search, quick-add. Wire to Supabase with real-time
+updates.
+Step 6
+Client Profile
+Build /clients/[id] page with all tabs. Implement each tab's data fetching and UI.
+Build the stage change dropdown with auto-logging.
+Step 7
+Client Progress
+Link
+Build client_links table and token generation logic. Build /progress/[token] public
+page. Implement email sending via Resend. Implement link deactivation logic when
+stage = Delivered.
+Step 8
+Tasks & Outreach
+Build task CRUD within client profile. Build /tasks (My Tasks) page. Build outreach
+log CRUD. Build /outreach (today's follow-ups) page.
+Step 9
+Proposals
+Build proposal builder UI with line items. Build /proposals/[token] public view page.
+Implement accept/decline logic. Implement auto-stage-change on acceptance.
+Step
+10
+Invoices & Stripe
+Build invoice CRUD. Integrate Stripe API for payment link generation. Build
+/api/webhooks/stripe endpoint. Implement payment status updates.
+
+--- Page 12 ---
+StageTrack AI Prompt    Page 12
+Step
+11
+Files &
+Milestones
+Build file upload with Supabase Storage. Implement 'share with client' toggle. Build
+milestone CRUD. Wire milestones to /progress/[token] page.
+Step
+12
+Notifications
+Build notification system: DB table, in-app bell, email triggers via Resend. Wire all
+notification-triggering events.
+Step
+13
+Analytics
+Dashboard
+Build / dashboard with Recharts: pipeline summary, revenue chart, conversion
+funnel, today's tasks. Implement date range filtering.
+Step
+14
+Settings
+Build /settings page: workspace settings, team management, notification
+preferences, stage label customization, onboarding checklist template.
+Step
+15
+Polish & Deploy
+Add skeleton loaders to all data views. Add empty states to all lists. Test all public
+pages on mobile. Set up Vercel deployment from GitHub. Configure environment
+variables in Vercel. Run end-to-end test of full client lifecycle.
+09
+All Pages & Routes
+Every route in the application. Routes marked as public require no authentication.
+
+--- Page 13 ---
+StageTrack AI Prompt    Page 13
+Route
+Purpose
+/
+Dashboard — analytics overview, pipeline summary, revenue chart, today's
+tasks
+/pipeline
+Kanban board — all clients across all 12 stages
+/clients
+List view of all clients — sortable, filterable table
+/clients/new
+Create new client form
+/clients/[id]
+Full client profile with tabs
+/tasks
+My Tasks — team member's task list across all clients
+/outreach
+Today's follow-ups — outreach items due across all clients
+/settings
+Workspace + team + notification settings
+/progress/[token]
+Public client progress page — no auth required
+/proposals/[token]
+Public proposal view page — no auth required
+/login
+Admin/team member login
+/invite/[token]
+Team member signup via invite link
+/api/webhooks/stripe
+Stripe webhook endpoint for payment confirmation
+/api/client-link/[token]
+API: fetch client data for progress page
+/api/proposal/[token]
+API: fetch proposal data + handle accept/decline
+10
+UI & Design Requirements
+These rules apply to every page in the application without exception.
+  Use shadcn/ui components throughout — do not build custom UI primitives
+  Color palette: Primary Navy #1E3A5F, Accent Blue #2E86AB, Background #F5F6FA, White #FFFFFF,
+Success #27AE60, Warning #E67E22, Danger #E74C3C
+  Typography: Inter font (Google Fonts). Headings bold. Body regular. Code Courier New.
+  Sidebar navigation (collapsible): Dashboard, Pipeline, Clients, Tasks, Outreach, Settings
+  Top navbar: workspace logo, search bar, notifications bell, user avatar + dropdown
+  All data tables must have: sorting, filtering, pagination (20 rows default)
+  All forms must have: inline validation (Zod), loading states on submit, success/error toasts (shadcn
+Toast)
+
+--- Page 14 ---
+StageTrack AI Prompt    Page 14
+  Mobile responsive: sidebar collapses to bottom nav on screens < 768px
+  Empty states: every list/table must have a designed empty state with illustration and CTA button
+  Loading states: skeleton loaders (not spinners) for all data-fetching views
+  The /progress/[token] page must work perfectly on mobile — this is what clients see
+  Dark mode: not required for v1
+Follow-up Prompt: Design System
+"Set up the StageTrack design system. (1) Configure Tailwind with custom colors: primary: #1E3A5F,
+accent: #2E86AB, background: #F5F6FA. (2) Initialize shadcn/ui with default theme but override primary
+color to #1E3A5F. (3) Create a /components/ui/layout folder with: AppLayout.tsx (sidebar + navbar
+wrapper), Sidebar.tsx (collapsible, with nav items: Dashboard, Pipeline, Clients, Tasks, Outreach, Settings),
+Navbar.tsx (logo, search, notifications bell with badge, user avatar dropdown). (4) Create skeleton
+components: ClientCardSkeleton, ClientListSkeleton, TaskListSkeleton. (5) Create EmptyState.tsx
+component that accepts: icon, title, description, ctaLabel, ctaHref props. Use these everywhere a list might
+be empty."
+11
+Security Requirements
+Every item on this list is mandatory. The AI must not skip or simplify any security measure.
+  All database access enforced via Supabase Row Level Security (RLS) policies — never bypass RLS
+  Admin can only access data within their workspace_id — enforced via RLS
+  Team members can only access clients where assigned_to = their user_id — enforced via RLS
+  Client progress tokens are UUID v4 — cryptographically unguessable
+  Public pages (/progress/[token], /proposals/[token]) are read-only — no write operations possible from
+these pages
+  File URLs are signed (Supabase signed URLs) with 1-hour expiry — regenerated on each page load
+  All API routes validate auth session server-side before returning data
+  Environment variables: never expose Supabase service_role key to frontend — use only anon key
+client-side
+  Rate limiting on /api/client-link and /api/proposal endpoints: 60 requests/minute per IP
+  Input sanitization: all text inputs sanitized before DB write (prevent XSS)
+12
+Additional Engineering Rules
+These rules govern the entire codebase. Apply them from the first line of code.
+
+--- Page 15 ---
+StageTrack AI Prompt    Page 15
+  Every time a client's stage changes, insert a record into activity_log with action_type='stage_change',
+actor_id=current user, description='Moved from [old stage] to [new stage]'
+  Every time a task is created, completed, or deleted — log to activity_log
+  Every time a file is uploaded or shared — log to activity_log
+  The activity_log on the client profile must be sorted newest-first and show human-readable timestamps
+(e.g. '2 hours ago')
+  All monetary values stored as integers in cents (e.g. $1,500.00 stored as 150000) — display formatted
+with currency symbol
+  All dates stored as UTC ISO strings — display in user's local timezone
+  When generating client progress link token, use crypto.randomUUID() — never use Math.random()
+  The /progress/[token] page must have a tag — prevent search engine indexing
+  Proposal and client link tokens are separate — do not reuse the same token for both
+  When a client is moved to stage 12 (Churned/Lost), their data is NOT deleted — it becomes read-only
+(archived). No edits allowed except adding notes.
+  Build with TypeScript throughout — no plain JavaScript files
+  Use server components by default in Next.js App Router. Use 'use client' only when interactivity is
+required
+  All Supabase queries use typed clients (generate types from Supabase CLI: supabase gen types
+typescript)
+13
+Final Validation Prompt
+After completing all 15 build steps, paste this prompt to validate the full application:
+"Review the complete StageTrack application you have built. Check the following and fix any
+issues found: 1. Every route in Section 9 exists and renders without errors 2. RLS policies
+are active on all Supabase tables 3. /progress/[token] page works on mobile (375px width)
+without horizontal scroll 4. Link deactivation logic: when client stage moves to 10
+(Delivered), is_active = false in client_links 5. All forms have Zod validation and show
+inline error messages 6. All data-loading views have skeleton loaders 7. All list views have
+empty states 8. The Stripe webhook at /api/webhooks/stripe correctly updates invoice status
+on payment 9. Activity log entries are created for: stage changes, task completions, file
+uploads, proposal accept/decline, invoice paid 10. No Supabase service_role key is exposed in
+any client-side code Fix any issues found and confirm all 10 checks pass."
+ StageTrack  Complete AI Build Prompt  v1.0  March 2026
+ Built for personal use by the founder of Stova Media. May be commercialized as SaaS.
+ 
