@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -42,13 +42,9 @@ interface FileListProps {
 export function FileList({ clientId, refreshKey }: FileListProps) {
     const [files, setFiles] = useState<any[]>([])
     const [isLoading, setIsLoading] = useState(true)
-    const supabase = createClient()
+    const supabase = useMemo(() => createClient(), [])
 
-    useEffect(() => {
-        fetchFiles()
-    }, [clientId, refreshKey])
-
-    async function fetchFiles() {
+    const fetchFiles = useCallback(async () => {
         try {
             setIsLoading(true)
             const { data, error } = await supabase
@@ -68,7 +64,11 @@ export function FileList({ clientId, refreshKey }: FileListProps) {
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [clientId, refreshKey, supabase])
+
+    useEffect(() => {
+        fetchFiles()
+    }, [fetchFiles])
 
     const getFileIcon = (fileName: string) => {
         const ext = fileName.split('.').pop()?.toLowerCase()

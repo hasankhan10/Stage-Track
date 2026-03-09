@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import {
     Tabs,
     TabsContent,
@@ -57,9 +57,19 @@ function OverviewTab({ client }: { client: any }) {
 
 export function ClientTabs({ client }: { client: any }) {
     const [fileRefreshKey, setFileRefreshKey] = useState(0)
+    const [visitedTabs, setVisitedTabs] = useState<Set<string>>(new Set(['overview']))
+    const [isPending, startTransition] = useTransition()
 
     return (
-        <Tabs defaultValue="overview" className="w-full">
+        <Tabs
+            defaultValue="overview"
+            onValueChange={(val) => {
+                startTransition(() => {
+                    setVisitedTabs(prev => new Set(prev).add(val))
+                })
+            }}
+            className="w-full"
+        >
             <div className="overflow-x-auto pb-2 mb-4 scrollbar-none">
                 <TabsList className="w-max inline-flex">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -76,103 +86,117 @@ export function ClientTabs({ client }: { client: any }) {
             </div>
 
             <TabsContent value="overview" className="mt-0">
-                <OverviewTab client={client} />
+                {visitedTabs.has('overview') && <OverviewTab client={client} />}
             </TabsContent>
 
             <TabsContent value="milestones" className="mt-0">
-                <MilestoneTracker clientId={client.id} />
+                {visitedTabs.has('milestones') && <MilestoneTracker clientId={client.id} />}
             </TabsContent>
 
             <TabsContent value="tasks" className="mt-0">
-                <div className="space-y-4">
-                    <div className="flex justify-end">
-                        <CreateTaskDialog
-                            clients={[{ id: client.id, name: client.name }]}
-                            users={client.users ? [{ id: client.users.id, name: client.users.name }] : []}
-                            defaultClientId={client.id}
+                {visitedTabs.has('tasks') && (
+                    <div className="space-y-4">
+                        <div className="flex justify-end">
+                            <CreateTaskDialog
+                                clients={[{ id: client.id, name: client.name }]}
+                                users={client.users ? [{ id: client.users.id, name: client.users.name }] : []}
+                                defaultClientId={client.id}
+                            />
+                        </div>
+                        <EmptyState
+                            icon={CheckSquare}
+                            title="No Tasks Yet"
+                            description="Create tasks to track deliverables for this client."
                         />
                     </div>
-                    <EmptyState
-                        icon={CheckSquare}
-                        title="No Tasks Yet"
-                        description="Create tasks to track deliverables for this client."
-                    />
-                </div>
+                )}
             </TabsContent>
 
             <TabsContent value="outreach" className="mt-0">
-                <div className="space-y-4">
-                    <div className="flex justify-end">
-                        <LogOutreachDialog
-                            clients={[{ id: client.id, name: client.name }]}
-                            defaultClientId={client.id}
+                {visitedTabs.has('outreach') && (
+                    <div className="space-y-4">
+                        <div className="flex justify-end">
+                            <LogOutreachDialog
+                                clients={[{ id: client.id, name: client.name }]}
+                                defaultClientId={client.id}
+                            />
+                        </div>
+                        <EmptyState
+                            icon={MessageSquare}
+                            title="No Outreach Logs"
+                            description="Log emails, calls, and LinkedIn messages here."
                         />
                     </div>
-                    <EmptyState
-                        icon={MessageSquare}
-                        title="No Outreach Logs"
-                        description="Log emails, calls, and LinkedIn messages here."
-                    />
-                </div>
+                )}
             </TabsContent>
 
             <TabsContent value="proposals" className="mt-0">
-                <ClientProposals clientId={client.id} />
+                {visitedTabs.has('proposals') && <ClientProposals clientId={client.id} />}
             </TabsContent>
 
             <TabsContent value="contracts" className="mt-0">
-                <EmptyState
-                    icon={FileCheck}
-                    title="No Contracts"
-                    description="Upload or generate contracts for this client."
-                />
+                {visitedTabs.has('contracts') && (
+                    <EmptyState
+                        icon={FileCheck}
+                        title="No Contracts"
+                        description="Upload or generate contracts for this client."
+                    />
+                )}
             </TabsContent>
 
             <TabsContent value="invoices" className="mt-0">
-                <ClientInvoices clientId={client.id} />
+                {visitedTabs.has('invoices') && <ClientInvoices clientId={client.id} />}
             </TabsContent>
 
             <TabsContent value="files" className="mt-0 space-y-6">
-                <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-semibold">Client Files</h3>
-                    <Dialog>
-                        <DialogTrigger
-                            render={
-                                <Button>
-                                    <Upload className="mr-2 h-4 w-4" /> Upload
-                                </Button>
-                            }
-                        />
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Upload Client Files</DialogTitle>
-                            </DialogHeader>
-                            <FileUploader
-                                clientId={client.id}
-                                onUploadComplete={() => setFileRefreshKey(prev => prev + 1)}
-                            />
-                        </DialogContent>
-                    </Dialog>
-                </div>
-                <FileList clientId={client.id} refreshKey={fileRefreshKey} />
+                {visitedTabs.has('files') && (
+                    <>
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-semibold">Client Files</h3>
+                            <Dialog>
+                                <DialogTrigger
+                                    render={
+                                        <Button>
+                                            <Upload className="mr-2 h-4 w-4" /> Upload
+                                        </Button>
+                                    }
+                                />
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Upload Client Files</DialogTitle>
+                                    </DialogHeader>
+                                    <FileUploader
+                                        clientId={client.id}
+                                        onUploadComplete={() => setFileRefreshKey(prev => prev + 1)}
+                                    />
+                                </DialogContent>
+                            </Dialog>
+                        </div>
+                        <FileList clientId={client.id} refreshKey={fileRefreshKey} />
+                    </>
+                )}
             </TabsContent>
 
             <TabsContent value="notes" className="mt-0">
-                <EmptyState
-                    icon={AlignLeft}
-                    title="No Notes"
-                    description="Keep internal team notes about this client."
-                    ctaLabel="Add Note"
-                    ctaAction={() => { }}
-                />
+                {visitedTabs.has('notes') && (
+                    <EmptyState
+                        icon={AlignLeft}
+                        title="No Notes"
+                        description="Keep internal team notes about this client."
+                        ctaLabel="Add Note"
+                        ctaAction={() => { }}
+                    />
+                )}
             </TabsContent>
 
             <TabsContent value="activity" className="mt-0">
-                <EmptyState
-                    icon={Activity}
-                    title="No Activity"
-                    description="Stage changes and key events will appear here automatically."
-                />
+                {visitedTabs.has('activity') && (
+                    <EmptyState
+                        icon={Activity}
+                        title="No Activity"
+                        description="Stage changes and key events will appear here automatically."
+                    />
+                )}
             </TabsContent>
         </Tabs>
     )

@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
-import { Plus, Trash2, Calendar, CheckCircle2, Circle } from 'lucide-react'
+import { Plus, Trash2, Calendar, CheckCircle2, Circle, Loader2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -30,13 +30,9 @@ export function MilestoneTracker({ clientId }: MilestoneTrackerProps) {
     const [isAdding, setIsAdding] = useState(false)
     const [newTitle, setNewTitle] = useState('')
     const [newDueDate, setNewDueDate] = useState('')
-    const supabase = createClient()
+    const supabase = useMemo(() => createClient(), [])
 
-    useEffect(() => {
-        fetchMilestones()
-    }, [clientId])
-
-    async function fetchMilestones() {
+    const fetchMilestones = useCallback(async () => {
         try {
             setIsLoading(true)
             const { data, error } = await supabase
@@ -52,7 +48,11 @@ export function MilestoneTracker({ clientId }: MilestoneTrackerProps) {
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [clientId, supabase])
+
+    useEffect(() => {
+        fetchMilestones()
+    }, [fetchMilestones])
 
     async function handleAddMilestone() {
         if (!newTitle) return
@@ -186,8 +186,15 @@ export function MilestoneTracker({ clientId }: MilestoneTrackerProps) {
                                     onChange={(e) => setNewDueDate(e.target.value)}
                                 />
                                 <div className="flex gap-2">
-                                    <Button variant="ghost" onClick={() => setIsAdding(false)}>Cancel</Button>
-                                    <Button onClick={handleAddMilestone}>Add</Button>
+                                    <Button variant="ghost" onClick={() => setIsAdding(false)} disabled={isLoading}>Cancel</Button>
+                                    <Button onClick={async () => {
+                                        setIsLoading(true);
+                                        await handleAddMilestone();
+                                        setIsLoading(false);
+                                    }} disabled={isLoading}>
+                                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                                        {isLoading ? "Adding..." : "Add"}
+                                    </Button>
                                 </div>
                             </div>
                         </CardContent>
