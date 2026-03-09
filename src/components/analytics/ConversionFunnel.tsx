@@ -67,11 +67,11 @@ export function ConversionFunnel() {
     }
 
     return (
-        <Card className="col-span-1 shadow-sm border-none bg-card">
-            <CardHeader>
-                <CardTitle className="text-base font-semibold">Conversion Funnel</CardTitle>
+        <Card className="col-span-1 shadow-2xl shadow-slate-200/40 border border-slate-100 bg-white/80 backdrop-blur-xl rounded-3xl overflow-hidden">
+            <CardHeader className="border-b border-slate-100/50 bg-white/40 pb-4">
+                <CardTitle className="text-lg font-black text-slate-800">Lead Conversion Funnel</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
                 <div className="h-[300px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart
@@ -85,29 +85,33 @@ export function ConversionFunnel() {
                                 type="category"
                                 axisLine={false}
                                 tickLine={false}
-                                fontSize={12}
-                                tick={{ fill: 'currentColor', opacity: 0.8 }}
+                                fontSize={13}
+                                tick={{ fill: '#475569', fontWeight: 600 }}
                             />
                             <Tooltip
                                 cursor={{ fill: 'transparent' }}
                                 contentStyle={{
-                                    backgroundColor: 'hsl(var(--card))',
-                                    borderColor: 'hsl(var(--border))',
-                                    borderRadius: '8px',
-                                    fontSize: '12px'
+                                    backgroundColor: '#ffffff',
+                                    borderColor: '#f1f5f9',
+                                    borderRadius: '12px',
+                                    padding: '12px',
+                                    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+                                    fontSize: '13px',
+                                    fontWeight: 600,
+                                    color: '#0f172a'
                                 }}
                             />
                             <Bar
                                 dataKey="count"
                                 fill="hsl(var(--primary))"
-                                radius={[0, 4, 4, 0]}
-                                barSize={32}
+                                radius={[0, 6, 6, 0]}
+                                barSize={36}
                             >
                                 <LabelList
                                     dataKey="conversion"
                                     position="right"
-                                    style={{ fill: 'currentColor', fontSize: '10px', opacity: 0.6 }}
-                                    offset={10}
+                                    style={{ fill: '#64748b', fontSize: '11px', fontWeight: 'bold' }}
+                                    offset={12}
                                 />
                             </Bar>
                         </BarChart>

@@ -4,7 +4,7 @@ import { PIPELINE_STAGES } from '@/lib/pipeline'
 import { ClientsListClient } from '@/components/clients/ClientsListClient'
 
 export const metadata = {
-    title: 'Clients | StageTrack',
+    title: 'Clients | Stova Media',
     description: 'Full client directory — search, filter, and manage all your clients.',
 }
 

@@ -11,7 +11,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 
 export const metadata = {
-    title: 'Pipeline | StageTrack',
+    title: 'Pipeline | Stova Media',
     description: 'Manage your client pipeline across all stages',
 }
 

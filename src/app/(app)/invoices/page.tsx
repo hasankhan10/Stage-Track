@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-export const metadata = { title: 'Invoices | StageTrack' }
+export const metadata = { title: 'Invoices | Stova Media' }
 
 export default async function InvoicesPage() {
     const supabase = await createClient()
@@ -19,20 +19,24 @@ export default async function InvoicesPage() {
     const { data: invoices } = await supabase
         .from('invoices')
         .select(`
-      *,
+      id,
+      status,
+      total,
+      created_at,
+      line_items,
       clients ( name )
     `)
         .order('created_at', { ascending: false })
 
     const typedInvoices = invoices || []
 
-    function getStatusBadge(status: string) {
-        switch (status) {
-            case 'Draft': return <Badge variant="secondary">Draft</Badge>
-            case 'Sent': return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100/80 border-blue-200">Sent (Unpaid)</Badge>
-            case 'Paid': return <Badge className="bg-green-100 text-green-700 hover:bg-green-100/80 border-green-200">Paid</Badge>
-            case 'Overdue': return <Badge variant="destructive">Overdue</Badge>
-            default: return <Badge variant="outline">{status}</Badge>
+    function getStatusBadge(statusStr: string, isDraft?: boolean) {
+        if (isDraft) return <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-100/80 border-slate-200">Draft</Badge>
+        switch (statusStr) {
+            case 'unpaid': return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100/80 border-blue-200">Sent (Unpaid)</Badge>
+            case 'paid': return <Badge className="bg-green-100 text-green-700 hover:bg-green-100/80 border-green-200">Paid</Badge>
+            case 'overdue': return <Badge variant="destructive">Overdue</Badge>
+            default: return <Badge variant="outline">{statusStr}</Badge>
         }
     }
 
@@ -73,27 +77,32 @@ export default async function InvoicesPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border">
-                                {typedInvoices.map((inv) => (
-                                    <tr key={inv.id} className="hover:bg-muted/20 transition-colors">
-                                        <td className="px-6 py-4 font-medium text-foreground">
-                                            <Link href={`/invoices`} className="hover:underline text-primary">
-                                                {inv.invoice_number}
-                                            </Link>
-                                        </td>
-                                        <td className="px-6 py-4 text-muted-foreground">
-                                            {inv.clients?.name}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {getStatusBadge(inv.status)}
-                                        </td>
-                                        <td className="px-6 py-4 font-semibold text-foreground">
-                                            {formatCurrency(inv.amount / 100)}
-                                        </td>
-                                        <td className="px-6 py-4 hidden sm:table-cell text-muted-foreground">
-                                            {new Date(inv.due_date).toLocaleDateString()}
-                                        </td>
-                                    </tr>
-                                ))}
+                                {typedInvoices.map((inv) => {
+                                    const lineItems = inv.line_items as any
+                                    const invNumber = lineItems?.invoice_number || `INV-${inv.id.slice(0, 6)}`
+                                    const dueDate = lineItems?.due_date || new Date().toISOString()
+                                    return (
+                                        <tr key={inv.id} className="hover:bg-muted/20 transition-colors">
+                                            <td className="px-6 py-4 font-medium text-foreground">
+                                                <Link href={`/invoices/${inv.id}`} className="hover:underline text-primary">
+                                                    {invNumber}
+                                                </Link>
+                                            </td>
+                                            <td className="px-6 py-4 text-muted-foreground">
+                                                {inv.clients?.name}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                {getStatusBadge(inv.status, lineItems?.is_draft)}
+                                            </td>
+                                            <td className="px-6 py-4 font-semibold text-foreground">
+                                                {formatCurrency(inv.total / 100)}
+                                            </td>
+                                            <td className="px-6 py-4 hidden sm:table-cell text-muted-foreground">
+                                                {new Date(dueDate).toLocaleDateString()}
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
                             </tbody>
                         </table>
                     </div>

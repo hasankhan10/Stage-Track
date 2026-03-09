@@ -72,35 +72,40 @@ export function RevenueLineChart() {
     }
 
     return (
-        <Card className="col-span-1 shadow-sm border-none bg-card">
-            <CardHeader>
-                <CardTitle className="text-base font-semibold">Revenue Over Time</CardTitle>
+        <Card className="col-span-1 shadow-2xl shadow-slate-200/40 border border-slate-100 bg-white/80 backdrop-blur-xl rounded-3xl overflow-hidden">
+            <CardHeader className="border-b border-slate-100/50 bg-white/40 pb-4">
+                <CardTitle className="text-lg font-black text-slate-800">Actual Revenue Over Time</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
                 <div className="h-[300px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted))" />
                             <XAxis
                                 dataKey="month"
-                                fontSize={10}
+                                fontSize={11}
                                 tickLine={false}
                                 axisLine={false}
-                                tick={{ fill: 'currentColor', opacity: 0.6 }}
+                                tick={{ fill: '#64748b', fontWeight: 500 }}
                             />
                             <YAxis
-                                fontSize={10}
+                                fontSize={11}
                                 tickLine={false}
                                 axisLine={false}
                                 tickFormatter={(value) => `₹${value}`}
-                                tick={{ fill: 'currentColor', opacity: 0.6 }}
+                                tick={{ fill: '#64748b', fontWeight: 500 }}
                             />
                             <Tooltip
+                                cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }}
                                 contentStyle={{
-                                    backgroundColor: 'hsl(var(--card))',
-                                    borderColor: 'hsl(var(--border))',
-                                    borderRadius: '8px',
-                                    fontSize: '12px'
+                                    backgroundColor: '#ffffff',
+                                    borderColor: '#f1f5f9',
+                                    borderRadius: '12px',
+                                    padding: '12px',
+                                    boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+                                    fontSize: '13px',
+                                    fontWeight: 600,
+                                    color: '#0f172a'
                                 }}
                                 formatter={(value: any) => [`₹${Number(value).toLocaleString('en-IN')}`, 'Revenue']}
                             />
@@ -108,10 +113,11 @@ export function RevenueLineChart() {
                                 type="monotone"
                                 dataKey="revenue"
                                 stroke="hsl(var(--primary))"
-                                strokeWidth={3}
-                                dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
-                                activeDot={{ r: 6, strokeWidth: 0 }}
-                                animationDuration={1000}
+                                strokeWidth={4}
+                                dot={{ fill: '#ffffff', stroke: 'hsl(var(--primary))', strokeWidth: 3, r: 5 }}
+                                activeDot={{ r: 8, strokeWidth: 0, fill: 'hsl(var(--primary))' }}
+                                animationDuration={1500}
+                                fillOpacity={1}
                             />
                         </LineChart>
                     </ResponsiveContainer>

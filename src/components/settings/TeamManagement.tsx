@@ -16,16 +16,21 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { toast } from 'sonner'
-import { Loader2, UserPlus, Mail, Shield } from 'lucide-react'
+import { Loader2, UserPlus, Mail, Shield, Trash2 } from 'lucide-react'
 
 export function TeamManagement() {
     const [members, setMembers] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [inviting, setInviting] = useState(false)
+    const [removingId, setRemovingId] = useState<string | null>(null)
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null)
     const supabase = createClient()
 
     useEffect(() => {
         fetchMembers()
+        supabase.auth.getUser().then(({ data }) => {
+            setCurrentUserId(data.user?.id || null)
+        })
     }, [])
 
     async function fetchMembers() {
@@ -78,6 +83,29 @@ export function TeamManagement() {
         }
     }
 
+    async function handleRemove(id: string) {
+        if (!confirm('Are you sure you want to completely remove this user? Their login access will be revoked permanently.')) return
+
+        setRemovingId(id)
+        try {
+            const response = await fetch('/api/admin/remove-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: id })
+            })
+
+            const result = await response.json()
+            if (!response.ok) throw new Error(result.error)
+
+            toast.success('Team member removed successfully')
+            setMembers(prev => prev.filter(m => m.id !== id))
+        } catch (error: any) {
+            toast.error('Failed to remove user: ' + error.message)
+        } finally {
+            setRemovingId(null)
+        }
+    }
+
     const activeMembers = members.filter(m => m.last_login_at !== null)
     const pendingMembers = members.filter(m => m.last_login_at === null)
 
@@ -119,6 +147,7 @@ export function TeamManagement() {
                                 <TableHead>User</TableHead>
                                 <TableHead>Email</TableHead>
                                 <TableHead>Role</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -147,6 +176,19 @@ export function TeamManagement() {
                                                 {member.role === 'admin' ? <Shield className="h-3 w-3" /> : <Mail className="h-3 w-3" />}
                                                 {member.role}
                                             </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            {member.id !== currentUserId && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                    onClick={() => handleRemove(member.id)}
+                                                    disabled={removingId === member.id}
+                                                >
+                                                    {removingId === member.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                                </Button>
+                                            )}
                                         </TableCell>
                                     </TableRow>
                                 ))
@@ -178,6 +220,17 @@ export function TeamManagement() {
                                         <TableCell className="text-sm text-muted-foreground">{member.email}</TableCell>
                                         <TableCell className="text-right">
                                             <Badge variant="outline" className="text-[10px] uppercase">Pending</Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right w-[80px]">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                onClick={() => handleRemove(member.id)}
+                                                disabled={removingId === member.id}
+                                            >
+                                                {removingId === member.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                            </Button>
                                         </TableCell>
                                     </TableRow>
                                 ))}

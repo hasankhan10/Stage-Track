@@ -16,6 +16,7 @@ import {
     ArrowRight
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import Image from 'next/image'
 import { formatCurrency } from '@/lib/formatters'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
@@ -115,10 +116,10 @@ export default function ProposalPortal() {
             <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200/60 transition-all">
                 <div className="max-w-5xl mx-auto px-6 h-20 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-                            <FileCheck className="text-white h-5 w-5" />
+                        <div className="h-10 w-10 relative flex items-center justify-center">
+                            <Image src="/logo.jpg" alt="Stova Media logo" fill className="object-contain" />
                         </div>
-                        <span className="font-bold text-xl tracking-tight">StageTrack <span className="text-primary">Portal</span></span>
+                        <span className="font-bold text-xl tracking-tight">Stova Media <span className="text-primary">Portal</span></span>
                     </div>
 
                     <div className="flex items-center gap-3">

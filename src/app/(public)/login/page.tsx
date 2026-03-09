@@ -7,6 +7,7 @@ import * as z from 'zod'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff } from 'lucide-react'
+import Image from 'next/image'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -66,8 +67,11 @@ export default function LoginPage() {
     return (
         <div className="flex min-h-screen items-center justify-center bg-background px-4">
             <Card className="w-full max-w-md">
-                <CardHeader className="space-y-2 text-center">
-                    <CardTitle className="text-3xl font-bold tracking-tight text-primary">StageTrack</CardTitle>
+                <CardHeader className="space-y-2 text-center flex flex-col items-center">
+                    <div className="h-16 w-16 relative mb-2">
+                        <Image src="/logo.jpg" alt="Stova Media logo" fill className="object-contain" />
+                    </div>
+                    <CardTitle className="text-3xl font-bold tracking-tight text-primary">Stova Media</CardTitle>
                     <CardDescription>
                         Enter your credentials to access your workspace
                     </CardDescription>

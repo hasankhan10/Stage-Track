@@ -24,6 +24,7 @@ import { FileList } from '@/components/files/FileList'
 import { FileUploader } from '@/components/files/FileUploader'
 import { MilestoneTracker } from '@/components/projects/MilestoneTracker'
 import { ClientProposals } from '@/components/clients/ClientProposals'
+import { ClientInvoices } from '@/components/clients/ClientInvoices'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 
@@ -128,13 +129,7 @@ export function ClientTabs({ client }: { client: any }) {
             </TabsContent>
 
             <TabsContent value="invoices" className="mt-0">
-                <EmptyState
-                    icon={Receipt}
-                    title="No Invoices"
-                    description="Create Stripe invoices to get paid."
-                    ctaLabel="Create Invoice"
-                    ctaAction={() => window.location.href = '/invoices/new'}
-                />
+                <ClientInvoices clientId={client.id} />
             </TabsContent>
 
             <TabsContent value="files" className="mt-0 space-y-6">

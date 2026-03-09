@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { CalendarDays, CheckCircle2, Clock, AlertCircle } from 'lucide-react'
 import { EmptyState } from '@/components/ui/EmptyState'
 
-export const metadata = { title: 'Tasks | StageTrack' }
+export const metadata = { title: 'Tasks | Stova Media' }
 
 export default async function TasksPage() {
     const supabase = await createClient()

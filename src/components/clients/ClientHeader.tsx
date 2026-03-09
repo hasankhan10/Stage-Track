@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { PIPELINE_STAGES, getStageById } from '@/lib/pipeline'
@@ -49,6 +49,9 @@ export function ClientHeader({ client }: { client: any }) {
     const [isDeleting, setIsDeleting] = useState(false)
     const [deleteOpen, setDeleteOpen] = useState(false)
     const [currentStage, setCurrentStage] = useState(client.stage)
+    const [mounted, setMounted] = useState(false)
+
+    useEffect(() => setMounted(true), [])
 
     const stageDefs = getStageById(currentStage)
     const createdDate = new Date(client.created_at).toLocaleDateString()
@@ -149,7 +152,7 @@ export function ClientHeader({ client }: { client: any }) {
                     </div>
                     <div className="flex items-center gap-2">
                         <CalendarDays className="h-4 w-4" />
-                        Added {createdDate}
+                        Added <span>{mounted ? createdDate : '...'}</span>
                     </div>
                     {client.users && (
                         <div className="flex items-center gap-2">

@@ -69,7 +69,7 @@ export async function POST(
         // Skip if no API key (e.g., local testing without billing setup)
         if (process.env.RESEND_API_KEY) {
             await resend.emails.send({
-                from: 'updates@stagetrack.app', // Update with a verified domain
+                from: 'updates@stovamedia.com', // Update with a verified domain
                 to: client.email,
                 subject: 'Your Project Progress Dashboard',
                 html: `

@@ -78,9 +78,9 @@ export async function POST(
         // 4. Send Email via Resend
         if (process.env.RESEND_API_KEY) {
             await resend.emails.send({
-                from: 'billing@stagetrack.app',
+                from: 'billing@stovamedia.com',
                 to: invoice.clients.email,
-                subject: `Invoice ${invoice.invoice_number} from StageTrack`,
+                subject: `Invoice ${invoice.invoice_number} from Stova Media`,
                 html: `
           <h1>Hello ${invoice.clients.name},</h1>
           <p>Your invoice <strong>${invoice.invoice_number}</strong> is ready.</p>

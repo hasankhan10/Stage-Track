@@ -35,6 +35,8 @@ const invoiceSchema = z.object({
     invoice_number: z.string().min(1, 'Required'),
     due_date: z.string().min(1, 'Required'),
     notes: z.string().optional(),
+    upi_id: z.string().optional(),
+    bank_details: z.string().optional(),
     items: z.array(invoiceItemSchema).min(1, 'Add at least one item'),
 })
 
@@ -61,6 +63,8 @@ export function InvoiceBuilder({
             invoice_number: nextInvoiceNumber,
             due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // +14 days default
             notes: 'Thank you for your business!',
+            upi_id: '',
+            bank_details: '',
             items: [{ description: '', quantity: 1, unit_price: 0 }],
         },
     })
@@ -100,22 +104,27 @@ export function InvoiceBuilder({
             if (!profile) throw new Error('Profile not found')
 
             // Insert Invoice
-            const { data: invoice, error: insertError } = await supabase
+            const { data: invoice, error } = await supabase
                 .from('invoices')
                 .insert({
                     client_id: data.client_id,
-                    workspace_id: profile.workspace_id,
-                    invoice_number: data.invoice_number,
-                    due_date: new Date(data.due_date).toISOString(),
-                    amount: Math.round(subtotal * 100), // Convert to cents
-                    status: status,
-                    line_items: data.items, // Storing as JSONB for simplicity in MVP
-                    created_by: userData.user.id,
+                    total: Math.round(subtotal * 100), // Convert to cents
+                    subtotal: Math.round(subtotal * 100),
+                    status: status === 'Sent' ? 'unpaid' : 'unpaid', // DB expects 'unpaid', 'paid', 'overdue'
+                    line_items: {
+                        items: data.items,
+                        notes: data.notes,
+                        upi_id: data.upi_id,
+                        bank_details: data.bank_details,
+                        invoice_number: data.invoice_number,
+                        due_date: new Date(data.due_date).toISOString(),
+                        is_draft: status !== 'Sent'
+                    }
                 })
                 .select('id')
                 .single()
 
-            if (insertError) throw insertError
+            if (error) throw error
 
             await supabase.from('activity_log').insert({
                 client_id: data.client_id,
@@ -124,27 +133,17 @@ export function InvoiceBuilder({
             })
 
             if (status === 'Sent') {
-                toast.loading('Initializing Stripe Secure Link...', { id: 'invoice-toast' })
+                toast.loading('Generating Premium PDF...', { id: 'invoice-toast' })
                 await new Promise(r => setTimeout(r, 1200))
-                toast.loading('Generating Encrypted Invoice PDF...', { id: 'invoice-toast' })
-                await new Promise(r => setTimeout(r, 1000))
                 toast.loading('Optimizing Document Layout...', { id: 'invoice-toast' })
-                await new Promise(r => setTimeout(r, 800))
-
-                // Trigger Server Action to generate Stripe Link & Email
-                const res = await fetch(`/api/invoices/${invoice.id}/send`, { method: 'POST' })
-                const resData = await res.json()
-
-                if (!res.ok) {
-                    throw new Error(resData.error || 'Failed to send invoice via Stripe/Resend')
-                }
+                await new Promise(r => setTimeout(r, 1000))
 
                 toast.success('Invoice is now LIVE!', {
                     id: 'invoice-toast',
-                    description: 'Stripe portal is active. You can now review and notify.',
+                    description: 'Premium template generated. You can now review and send.',
                     action: {
                         label: 'View',
-                        onClick: () => window.open(resData.url, '_blank')
+                        onClick: () => window.open(`/invoices/${invoice.id}`, '_blank')
                     },
                     duration: 6000
                 })
@@ -352,19 +351,55 @@ export function InvoiceBuilder({
                         </CardContent>
                     </Card>
 
-                    {/* Notes Card */}
+                    {/* Payment Details Card */}
                     <Card className="border-none shadow-xl bg-card/50 backdrop-blur-sm">
-                        <CardContent className="pt-6">
+                        <CardHeader className="pb-4 border-b border-border/50">
+                            <div className="flex items-center gap-2 text-primary">
+                                <CreditCard className="h-5 w-5" />
+                                <CardTitle className="text-lg">Payment Info & Notes</CardTitle>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="pt-6 space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <FormField
+                                    control={form.control as any}
+                                    name="upi_id"
+                                    render={({ field }: { field: any }) => (
+                                        <FormItem>
+                                            <FormLabel>UPI ID</FormLabel>
+                                            <FormControl>
+                                                <Input placeholder="e.g., yourname@upi" className="h-11 bg-background/50 border-muted-foreground/20 rounded-xl focus:ring-primary/20 transition-all font-mono" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                <FormField
+                                    control={form.control as any}
+                                    name="bank_details"
+                                    render={({ field }: { field: any }) => (
+                                        <FormItem>
+                                            <FormLabel>Bank Details (Account / IFSC)</FormLabel>
+                                            <FormControl>
+                                                <Textarea placeholder="Account Name:&#10;Account No:&#10;IFSC Code:" className="min-h-[80px] bg-background/50 border-muted-foreground/20 rounded-xl focus:ring-primary/20 transition-all font-mono" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+
                             <FormField
                                 control={form.control as any}
                                 name="notes"
                                 render={({ field }: { field: any }) => (
                                     <FormItem>
-                                        <FormLabel className="text-muted-foreground font-semibold">Notes / Terms & Conditions</FormLabel>
+                                        <FormLabel className="text-muted-foreground font-semibold">Additional Notes / Terms</FormLabel>
                                         <FormControl>
                                             <Textarea
-                                                placeholder="Enter payment terms, bank details, or a thank you note..."
-                                                className="min-h-[120px] bg-background/50 border-muted-foreground/20 rounded-xl focus:ring-primary/20 transition-all resize-none p-4"
+                                                placeholder="Enter payment terms or a thank you note..."
+                                                className="min-h-[100px] bg-background/50 border-muted-foreground/20 rounded-xl focus:ring-primary/20 transition-all resize-none p-4"
                                                 {...field}
                                             />
                                         </FormControl>

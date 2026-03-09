@@ -75,14 +75,14 @@ export async function POST(req: Request) {
                 .single()
 
             const emailResponse = await resend.emails.send({
-                from: `StageTrack <onboarding@${process.env.RESEND_DOMAIN || 'resend.dev'}>`,
+                from: `Stova Media <onboarding@${process.env.RESEND_DOMAIN || 'resend.dev'}>`,
                 to: [email],
-                subject: `Welcome to ${workspace?.name || 'StageTrack'}`,
+                subject: `Welcome to ${workspace?.name || 'Stova Media'}`,
                 html: `
                     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
                         <h1 style="color: #1e3a5f; margin-bottom: 24px;">Welcome to the Team, ${name}!</h1>
                         <p style="font-size: 16px; color: #4b5563; line-height: 1.6;">
-                            You have been invited to join <strong>${workspace?.name || 'StageTrack'}</strong>.
+                            You have been invited to join <strong>${workspace?.name || 'Stova Media'}</strong>.
                         </p>
                         <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 24px 0; border: 1px solid #e2e8f0;">
                             <p style="margin: 0 0 10px 0; color: #64748b; font-size: 14px;">Your Login Credentials:</p>

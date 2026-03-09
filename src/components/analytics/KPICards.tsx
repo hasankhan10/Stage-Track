@@ -65,7 +65,7 @@ export function KPICards() {
         return (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 {[...Array(4)].map((_, i) => (
-                    <Card key={i}>
+                    <Card key={i} className="border-slate-100 shadow-sm bg-white/50 backdrop-blur-sm">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <Skeleton className="h-4 w-[100px]" />
                         </CardHeader>
@@ -108,16 +108,19 @@ export function KPICards() {
     return (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {items.map((item, i) => (
-                <Card key={i} className="border-none shadow-premium bg-card/60 backdrop-blur-md hover:bg-card transition-all duration-300 group">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Card key={i} className="border-slate-100 shadow-xl shadow-slate-200/40 bg-white/70 backdrop-blur-xl hover:bg-white/90 transition-all duration-300 group rounded-3xl overflow-hidden relative">
+                    {/* Decorative gradient blur */}
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary/10 transition-colors" />
+
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
                         <CardTitle className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">{item.title}</CardTitle>
                         <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                             <item.icon className="h-4 w-4 text-primary" />
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-bold tracking-tight">{item.value}</div>
-                        <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1 font-medium">
+                        <div className="text-3xl font-black tracking-tight text-slate-900">{item.value}</div>
+                        <p className="text-xs text-slate-500 mt-2 flex items-center gap-1 font-medium">
                             {item.description}
                         </p>
                     </CardContent>

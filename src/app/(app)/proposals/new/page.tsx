@@ -2,7 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import { ProposalBuilder } from '@/components/proposals/ProposalBuilder'
 
-export const metadata = { title: 'Create Proposal | StageTrack' }
+export const metadata = { title: 'Create Proposal | Stova Media' }
 
 export default async function NewProposalPage() {
     const supabase = await createClient()

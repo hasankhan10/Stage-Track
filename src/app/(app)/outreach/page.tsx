@@ -5,7 +5,7 @@ import { OutreachClient } from '@/components/outreach/OutreachClient'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyLog = any
 
-export const metadata = { title: 'Outreach | StageTrack' }
+export const metadata = { title: 'Outreach | Stova Media' }
 
 export default async function OutreachPage() {
     const supabase = await createClient()
