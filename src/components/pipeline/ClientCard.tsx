@@ -7,7 +7,8 @@ import { getStageById } from '@/lib/pipeline'
 import { formatCurrency } from '@/lib/formatters'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { Clock, Building2 } from 'lucide-react'
+import { Clock, Building2, Mail, Phone, Globe, ExternalLink } from 'lucide-react'
+import Link from 'next/link'
 
 export function ClientCard({ client }: { client: ClientData }) {
     const {
@@ -35,38 +36,88 @@ export function ClientCard({ client }: { client: ClientData }) {
             style={style}
             {...attributes}
             {...listeners}
-            className={`relative flex flex-col gap-2 rounded-lg border bg-card p-4 text-card-foreground shadow-sm cursor-grab active:cursor-grabbing hover:border-primary/50 transition-colors ${isDragging ? 'z-50 ring-2 ring-primary' : ''}`}
+            className={`relative flex flex-col gap-3 rounded-xl border bg-card p-4 text-card-foreground shadow-sm cursor-grab active:cursor-grabbing hover:border-primary/50 hover:shadow-md transition-all duration-200 ${isDragging ? 'z-50 ring-2 ring-primary border-primary shadow-xl scale-[1.02]' : ''}`}
         >
+            {/* Header: Name and Stage Badge */}
             <div className="flex items-start justify-between gap-2">
-                <h4 className="font-semibold text-sm leading-tight">{client.name}</h4>
-                <Badge variant="outline" style={{ borderColor: stage?.color, color: stage?.color }} className="text-[10px] px-1.5 py-0 border leading-tight">
+                <h4 className="font-bold text-sm tracking-tight leading-tight group-hover:text-primary transition-colors">
+                    {client.name}
+                </h4>
+                <Badge
+                    variant="secondary"
+                    className="text-[9px] font-bold tracking-wider uppercase px-1.5 py-0 border leading-tight"
+                    style={{
+                        backgroundColor: `${stage?.color}10`,
+                        color: stage?.color,
+                        borderColor: `${stage?.color}30`
+                    }}
+                >
                     {stage?.statusGroup}
                 </Badge>
             </div>
 
-            {client.company && (
-                <div className="flex items-center text-xs text-muted-foreground">
-                    <Building2 className="mr-1 h-3 w-3" />
-                    <span className="truncate">{client.company}</span>
-                </div>
-            )}
+            {/* Client Info Grid */}
+            <div className="space-y-1.5">
+                {client.company && (
+                    <div className="flex items-center text-[11px] text-muted-foreground font-medium">
+                        <Building2 className="mr-2 h-3 w-3 text-muted-foreground/70" />
+                        <span className="truncate">{client.company}</span>
+                    </div>
+                )}
 
-            <div className="mt-2 text-sm font-medium text-foreground">
-                {formatCurrency(client.deal_value)}
+                {client.email && (
+                    <div className="flex items-center text-[11px] text-muted-foreground">
+                        <Mail className="mr-2 h-3 w-3 text-muted-foreground/70" />
+                        <span className="truncate">{client.email}</span>
+                    </div>
+                )}
+
+                {client.phone && (
+                    <div className="flex items-center text-[11px] text-muted-foreground">
+                        <Phone className="mr-2 h-3 w-3 text-muted-foreground/70" />
+                        <span>{client.phone}</span>
+                    </div>
+                )}
+
+                {client.website && (
+                    <div className="flex items-center text-[11px] text-muted-foreground group/link">
+                        <Globe className="mr-2 h-3 w-3 text-muted-foreground/70" />
+                        <span className="truncate flex-1">{client.website.replace(/^https?:\/\//, '')}</span>
+                        <ExternalLink className="ml-1 h-2.5 w-2.5 opacity-0 group-hover/link:opacity-100 transition-opacity" />
+                    </div>
+                )}
             </div>
 
-            <div className="mt-2 flex items-center justify-between">
-                <div className="flex items-center text-xs text-muted-foreground">
-                    <Clock className="mr-1 h-3 w-3" />
-                    <span suppressHydrationWarning>{client.daysInStage}d</span>
+            {/* Divider */}
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-border to-transparent my-0.5" />
+
+            {/* Footer: Deal Value, Days in Stage, & Assigned User */}
+            <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-col">
+                    <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Potential Value</span>
+                    <span className="text-sm font-bold text-emerald-600">
+                        {formatCurrency(client.deal_value)}
+                    </span>
                 </div>
 
-                <Avatar className="h-6 w-6 border bg-muted">
-                    <AvatarFallback className="text-[10px] bg-primary text-primary-foreground">
-                        {assignedInitial}
-                    </AvatarFallback>
-                </Avatar>
+                <div className="flex items-center gap-3">
+                    <div className="flex flex-col items-end">
+                        <div className="flex items-center text-[10px] text-muted-foreground font-medium">
+                            <Clock className="mr-1 h-2.5 w-2.5" />
+                            <span suppressHydrationWarning>{client.daysInStage}d</span>
+                        </div>
+                    </div>
+
+                    <Avatar className="h-7 w-7 border-2 border-background ring-1 ring-border bg-muted">
+                        <AvatarFallback className="text-[10px] bg-primary text-primary-foreground font-bold shadow-inner">
+                            {assignedInitial}
+                        </AvatarFallback>
+                    </Avatar>
+                </div>
             </div>
+
+            {/* Subtle Hover Gradient Effect */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity pointer-events-none rounded-xl" />
         </div>
     )
 }

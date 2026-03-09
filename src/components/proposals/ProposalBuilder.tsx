@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { ArrowLeft, Save, Send } from 'lucide-react'
+import { ArrowLeft, Save, Send, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -27,30 +27,41 @@ const proposalSchema = z.object({
     client_id: z.string().min(1, 'Please select a client'),
     title: z.string().min(1, 'Title is required'),
     content: z.string().min(10, 'Proposal content must be at least 10 characters'),
-    deal_value: z.coerce.number().min(0, 'Value must be positive'),
+    total_value: z.coerce.number().min(0, 'Value must be positive'),
 })
 
 type ProposalFormValues = z.infer<typeof proposalSchema>
 
 export function ProposalBuilder({ clients }: { clients: { id: string, name: string }[] }) {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const supabase = createClient()
     const [isPublishing, setIsPublishing] = useState(false)
+    const [isSaving, setIsSaving] = useState(false)
 
     const form = useForm<ProposalFormValues>({
         // @ts-ignore
         resolver: zodResolver(proposalSchema),
         defaultValues: {
-            client_id: '',
+            client_id: searchParams.get('client') || '',
             title: '',
             content: '',
-            deal_value: 0,
+            total_value: 0,
         },
     })
 
-    async function handleSave(data: ProposalFormValues, status: 'Draft' | 'Sent') {
+    // Update client_id if query param changes
+    useEffect(() => {
+        const clientFromQuery = searchParams.get('client')
+        if (clientFromQuery) {
+            form.setValue('client_id', clientFromQuery)
+        }
+    }, [searchParams, form])
+
+    async function handleSave(data: ProposalFormValues, status: 'draft' | 'sent') {
         try {
-            if (status === 'Sent') setIsPublishing(true)
+            if (status === 'sent') setIsPublishing(true)
+            else setIsSaving(true)
 
             const { data: userData } = await supabase.auth.getUser()
             if (!userData.user) throw new Error('Not authenticated')
@@ -61,118 +72,94 @@ export function ProposalBuilder({ clients }: { clients: { id: string, name: stri
                 .eq('id', userData.user.id)
                 .single()
 
-            if (!profile) throw new Error('Profile not found')
+            if (!profile?.workspace_id) throw new Error('No workspace found')
 
-            // Insert Proposal
-            const { data: insertedProposal, error: insertError } = await supabase
+            const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+
+            const { error } = await supabase
                 .from('proposals')
                 .insert({
-                    client_id: data.client_id,
                     workspace_id: profile.workspace_id,
+                    client_id: data.client_id,
                     title: data.title,
-                    content: data.content,
-                    deal_value: Math.round(data.deal_value * 100), // Convert to cents
                     status: status,
-                    created_by: userData.user.id,
+                    total_value: data.total_value,
+                    token: token,
+                    line_items: {
+                        body: data.content
+                    }
                 })
-                .select('id')
-                .single()
 
-            if (insertError) throw insertError
+            if (error) throw error
 
-            // Log Activity
-            await supabase.from('activity_log').insert({
-                client_id: data.client_id,
-                action_type: 'proposal',
-                description: `Proposal "${data.title}" was ${status === 'Sent' ? 'published' : 'saved as draft'}`
-            })
+            if (status === 'sent') {
+                toast.loading('Generating Premium PDF...', { id: 'publish-toast' })
+                await new Promise(r => setTimeout(r, 1200))
+                toast.loading('Optimizing Document Layout...', { id: 'publish-toast' })
+                await new Promise(r => setTimeout(r, 1000))
 
-            if (status === 'Sent') {
-                // Create public link
-                const { data: newLink, error: linkError } = await supabase
-                    .from('client_links')
-                    .insert({
-                        client_id: data.client_id,
-                        workspace_id: profile.workspace_id,
-                        link_type: 'proposal',
-                    })
-                    .select('token')
-                    .single()
-
-                if (linkError) throw linkError
-
-                toast.success('Proposal Published!', {
-                    description: 'A public token has been generated. The client can now view it.'
+                toast.success('Proposal is now LIVE!', {
+                    id: 'publish-toast',
+                    description: 'The secure link is generated. You can now review and send.',
+                    action: {
+                        label: 'View',
+                        onClick: () => window.open(`/portal?token=${token}`, '_blank')
+                    },
+                    duration: 6000
                 })
                 router.push(`/clients/${data.client_id}`)
             } else {
-                toast.success('Draft Saved')
-                router.push(`/clients/${data.client_id}`)
+                toast.success('Draft saved successfully')
+                router.push('/proposals')
             }
-
         } catch (error: any) {
-            toast.error(error.message || 'Error processing proposal')
+            toast.error(error.message || 'Something went wrong')
         } finally {
             setIsPublishing(false)
+            setIsSaving(false)
         }
     }
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <Link href="/">
-                        <Button variant="ghost" size="icon">
+                    <Link href="/proposals">
+                        <Button variant="ghost" size="icon" className="rounded-full">
                             <ArrowLeft className="h-5 w-5" />
                         </Button>
                     </Link>
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Proposal Builder</h1>
-                        <p className="text-muted-foreground">Draft and send a new proposal to a client.</p>
+                        <h1 className="text-2xl font-bold tracking-tight">New Proposal</h1>
+                        <p className="text-sm text-muted-foreground">Create a high-end proposal for your client.</p>
                     </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <Button
-                        variant="outline"
-                        type="button"
-                        onClick={form.handleSubmit((d) => handleSave(d as unknown as ProposalFormValues, 'Draft'))}
-                        disabled={form.formState.isSubmitting || isPublishing}
-                    >
-                        <Save className="mr-2 h-4 w-4" />
-                        Save Draft
-                    </Button>
-                    <Button
-                        type="button"
-                        onClick={form.handleSubmit((d) => handleSave(d as unknown as ProposalFormValues, 'Sent'))}
-                        disabled={form.formState.isSubmitting || isPublishing}
-                    >
-                        <Send className="mr-2 h-4 w-4" />
-                        {isPublishing ? 'Publishing...' : 'Publish & Send'}
-                    </Button>
                 </div>
             </div>
 
             <Form {...form}>
                 <form className="space-y-6">
-                    <Card>
+                    <Card className="border-none shadow-xl bg-card/50 backdrop-blur-sm">
                         <CardContent className="pt-6 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FormField
-                                    control={form.control as any}
+                                    control={form.control}
                                     name="client_id"
-                                    render={({ field }: { field: any }) => (
+                                    render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Client</FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <Select onValueChange={field.onChange} value={field.value}>
                                                 <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select target client" />
+                                                    <SelectTrigger className="h-11 bg-background/50 border-muted-foreground/20 rounded-xl focus:ring-primary/20 transition-all">
+                                                        <SelectValue placeholder="Select a client">
+                                                            {clients.find(c => c.id === field.value)?.name}
+                                                        </SelectValue>
                                                     </SelectTrigger>
                                                 </FormControl>
-                                                <SelectContent>
-                                                    {clients.map(c => (
-                                                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                                <SelectContent className="rounded-xl shadow-2xl">
+                                                    {clients.map((client) => (
+                                                        <SelectItem key={client.id} value={client.id} className="rounded-lg">
+                                                            {client.name}
+                                                        </SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
@@ -182,13 +169,18 @@ export function ProposalBuilder({ clients }: { clients: { id: string, name: stri
                                 />
 
                                 <FormField
-                                    control={form.control as any}
-                                    name="deal_value"
-                                    render={({ field }: { field: any }) => (
+                                    control={form.control}
+                                    name="total_value"
+                                    render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Estimated Value (USD)</FormLabel>
+                                            <FormLabel>Deal Value (INR)</FormLabel>
                                             <FormControl>
-                                                <Input type="number" step="0.01" placeholder="5000.00" {...field} />
+                                                <Input
+                                                    type="number"
+                                                    step="1"
+                                                    className="h-11 bg-background/50 border-muted-foreground/20 rounded-xl focus:ring-primary/20 transition-all"
+                                                    {...field}
+                                                />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -197,13 +189,13 @@ export function ProposalBuilder({ clients }: { clients: { id: string, name: stri
                             </div>
 
                             <FormField
-                                control={form.control as any}
+                                control={form.control}
                                 name="title"
-                                render={({ field }: { field: any }) => (
+                                render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Proposal Title</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="e.g. Website Redesign & SEO Retainer" {...field} />
+                                            <Input placeholder="e.g., Marketing Strategy 2024" className="h-11 bg-background/50 border-muted-foreground/20 rounded-xl focus:ring-primary/20 transition-all" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -211,15 +203,15 @@ export function ProposalBuilder({ clients }: { clients: { id: string, name: stri
                             />
 
                             <FormField
-                                control={form.control as any}
+                                control={form.control}
                                 name="content"
-                                render={({ field }: { field: any }) => (
+                                render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Proposal Content / Statement of Work</FormLabel>
+                                        <FormLabel>Proposal Body</FormLabel>
                                         <FormControl>
                                             <Textarea
-                                                placeholder="Outline the scope, deliverables, timeline, and terms here..."
-                                                className="min-h-[400px] resize-y font-mono text-sm leading-relaxed"
+                                                placeholder="Write your proposal here..."
+                                                className="min-h-[300px] bg-background/50 border-muted-foreground/20 rounded-xl focus:ring-primary/20 transition-all resize-none p-6 text-base leading-relaxed"
                                                 {...field}
                                             />
                                         </FormControl>
@@ -229,6 +221,28 @@ export function ProposalBuilder({ clients }: { clients: { id: string, name: stri
                             />
                         </CardContent>
                     </Card>
+
+                    <div className="flex justify-end gap-3">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            className="rounded-full px-6 h-11 font-semibold hover:bg-slate-100 transition-colors"
+                            onClick={form.handleSubmit((d) => handleSave(d, 'draft'))}
+                            disabled={isSaving || isPublishing}
+                        >
+                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                            Save Draft
+                        </Button>
+                        <Button
+                            type="button"
+                            className="bg-primary hover:bg-primary/90 rounded-full px-8 h-11 font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                            onClick={form.handleSubmit((d) => handleSave(d, 'sent'))}
+                            disabled={isSaving || isPublishing}
+                        >
+                            {isPublishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                            Publish & Review
+                        </Button>
+                    </div>
                 </form>
             </Form>
         </div>

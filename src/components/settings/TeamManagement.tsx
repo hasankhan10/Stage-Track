@@ -47,8 +47,9 @@ export function TeamManagement() {
 
     async function handleInvite(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
+        const target = e.currentTarget
         setInviting(true)
-        const formData = new FormData(e.currentTarget)
+        const formData = new FormData(target)
         const email = formData.get('email') as string
         const name = formData.get('name') as string
 
@@ -65,10 +66,10 @@ export function TeamManagement() {
             const result = await response.json()
             if (!response.ok) throw new Error(result.error)
 
-            toast.success(`User created: ${email}. Temp password: ${tempPassword}`, {
-                duration: 10000, // Show longer so admin can copy password
+            toast.success(`Invitation sent to ${email}`, {
+                description: 'They can now login using the credentials sent to their inbox.',
             })
-            e.currentTarget.reset()
+            target.reset()
             fetchMembers()
         } catch (error: any) {
             toast.error('Failed to create user: ' + error.message)
@@ -76,6 +77,9 @@ export function TeamManagement() {
             setInviting(false)
         }
     }
+
+    const activeMembers = members.filter(m => m.last_login_at !== null)
+    const pendingMembers = members.filter(m => m.last_login_at === null)
 
     if (loading) return <Loader2 className="h-8 w-8 animate-spin mx-auto my-12" />
 
@@ -105,8 +109,8 @@ export function TeamManagement() {
 
             <Card className="border-none shadow-none">
                 <CardHeader>
-                    <CardTitle>Team Members</CardTitle>
-                    <CardDescription>A list of people who have access to this workspace.</CardDescription>
+                    <CardTitle>Active Team Members</CardTitle>
+                    <CardDescription>People who have successfully joined the workspace.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                     <Table>
@@ -115,38 +119,73 @@ export function TeamManagement() {
                                 <TableHead>User</TableHead>
                                 <TableHead>Email</TableHead>
                                 <TableHead>Role</TableHead>
-                                <TableHead className="text-right">Action</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {members.map((member) => (
-                                <TableRow key={member.id}>
-                                    <TableCell>
-                                        <div className="flex items-center gap-3">
-                                            <Avatar className="h-8 w-8">
-                                                <AvatarFallback>
-                                                    {member.name?.split(' ').map((n: string) => n[0]).join('')}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <span className="font-medium">{member.name}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-muted-foreground">{member.email}</TableCell>
-                                    <TableCell>
-                                        <Badge variant="secondary" className="gap-1">
-                                            <Shield className="h-3 w-3" />
-                                            Admin
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <Button variant="ghost" size="sm">Edit</Button>
+                            {activeMembers.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={3} className="text-center py-8 text-muted-foreground italic">
+                                        No active members found.
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            ) : (
+                                activeMembers.map((member) => (
+                                    <TableRow key={member.id}>
+                                        <TableCell>
+                                            <div className="flex items-center gap-3">
+                                                <Avatar className="h-8 w-8">
+                                                    <AvatarFallback>
+                                                        {member.name?.split(' ').map((n: string) => n[0]).join('')}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <span className="font-medium">{member.name}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground">{member.email}</TableCell>
+                                        <TableCell>
+                                            <Badge variant={member.role === 'admin' ? 'secondary' : 'outline'} className="gap-1 capitalize">
+                                                {member.role === 'admin' ? <Shield className="h-3 w-3" /> : <Mail className="h-3 w-3" />}
+                                                {member.role}
+                                            </Badge>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
                         </TableBody>
                     </Table>
                 </CardContent>
             </Card>
+
+            {pendingMembers.length > 0 && (
+                <Card className="border-none shadow-none bg-muted/20">
+                    <CardHeader>
+                        <CardTitle className="text-sm">Pending Invitations</CardTitle>
+                        <CardDescription>These users have been invited but haven't logged in yet.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        <Table>
+                            <TableBody>
+                                {pendingMembers.map((member) => (
+                                    <TableRow key={member.id} className="border-none opacity-70">
+                                        <TableCell className="w-[40%]">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                                                    <Mail className="h-4 w-4 text-muted-foreground" />
+                                                </div>
+                                                <span className="text-sm">{member.name}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-sm text-muted-foreground">{member.email}</TableCell>
+                                        <TableCell className="text-right">
+                                            <Badge variant="outline" className="text-[10px] uppercase">Pending</Badge>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            )}
         </div>
     )
 }

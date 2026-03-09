@@ -10,9 +10,18 @@ export default async function NewProposalPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return redirect('/login')
 
+    const { data: profile } = await supabase
+        .from('users')
+        .select('workspace_id')
+        .eq('id', user.id)
+        .single()
+
+    if (!profile) return redirect('/login')
+
     const { data: clients } = await supabase
         .from('clients')
         .select('id, name')
+        .eq('workspace_id', profile.workspace_id)
         .order('name')
 
     return (

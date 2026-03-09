@@ -157,7 +157,7 @@ export function CreateTaskDialog({ clients = [], users = [], defaultClientId, ch
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Priority</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <Select onValueChange={field.onChange} value={field.value}>
                                             <FormControl>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Select priority" />
@@ -196,10 +196,12 @@ export function CreateTaskDialog({ clients = [], users = [], defaultClientId, ch
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Related Client</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!!defaultClientId}>
+                                        <Select onValueChange={field.onChange} value={field.value} disabled={!!defaultClientId}>
                                             <FormControl>
                                                 <SelectTrigger>
-                                                    <SelectValue placeholder="Select client" />
+                                                    <SelectValue placeholder="Select client">
+                                                        {clients.find(c => c.id === field.value)?.name}
+                                                    </SelectValue>
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
@@ -220,7 +222,7 @@ export function CreateTaskDialog({ clients = [], users = [], defaultClientId, ch
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Assignee</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <Select onValueChange={field.onChange} value={field.value}>
                                             <FormControl>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Select user" />

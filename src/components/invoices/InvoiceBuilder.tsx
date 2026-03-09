@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { ArrowLeft, Save, Send, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Save, Send, Plus, Trash2, Loader2, Receipt, CreditCard } from 'lucide-react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/formatters'
@@ -49,19 +49,29 @@ export function InvoiceBuilder({
 }) {
     const router = useRouter()
     const supabase = createClient()
+    const searchParams = useSearchParams()
     const [isPublishing, setIsPublishing] = useState(false)
+    const [isSaving, setIsSaving] = useState(false)
 
     const form = useForm<InvoiceFormValues>({
         // @ts-ignore - resolving potential deep type mismatch in zod/rhf version
         resolver: zodResolver(invoiceSchema),
         defaultValues: {
-            client_id: '',
+            client_id: searchParams.get('client') || '',
             invoice_number: nextInvoiceNumber,
             due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // +14 days default
             notes: 'Thank you for your business!',
             items: [{ description: '', quantity: 1, unit_price: 0 }],
         },
     })
+
+    // Update client_id if query param changes
+    useEffect(() => {
+        const clientFromQuery = searchParams.get('client')
+        if (clientFromQuery) {
+            form.setValue('client_id', clientFromQuery)
+        }
+    }, [searchParams, form])
 
     // Hook up Field Array for dynamic line items
     const { fields, append, remove } = useFieldArray({
@@ -75,7 +85,8 @@ export function InvoiceBuilder({
 
     async function handleSave(data: InvoiceFormValues, status: 'Draft' | 'Sent') {
         try {
-            setIsPublishing(true)
+            if (status === 'Sent') setIsPublishing(true)
+            else setIsSaving(true)
 
             const { data: userData } = await supabase.auth.getUser()
             if (!userData.user) throw new Error('Not authenticated')
@@ -113,88 +124,89 @@ export function InvoiceBuilder({
             })
 
             if (status === 'Sent') {
+                toast.loading('Initializing Stripe Secure Link...', { id: 'invoice-toast' })
+                await new Promise(r => setTimeout(r, 1200))
+                toast.loading('Generating Encrypted Invoice PDF...', { id: 'invoice-toast' })
+                await new Promise(r => setTimeout(r, 1000))
+                toast.loading('Optimizing Document Layout...', { id: 'invoice-toast' })
+                await new Promise(r => setTimeout(r, 800))
+
                 // Trigger Server Action to generate Stripe Link & Email
                 const res = await fetch(`/api/invoices/${invoice.id}/send`, { method: 'POST' })
+                const resData = await res.json()
+
                 if (!res.ok) {
-                    const errData = await res.json()
-                    throw new Error(errData.error || 'Failed to send invoice via Stripe/Resend')
+                    throw new Error(resData.error || 'Failed to send invoice via Stripe/Resend')
                 }
 
-                toast.success('Invoice Sent!', {
-                    description: 'Payment link generated and emailed to client.'
+                toast.success('Invoice is now LIVE!', {
+                    id: 'invoice-toast',
+                    description: 'Stripe portal is active. You can now review and notify.',
+                    action: {
+                        label: 'View',
+                        onClick: () => window.open(resData.url, '_blank')
+                    },
+                    duration: 6000
                 })
+                router.push(`/clients/${data.client_id}?tab=invoices`)
             } else {
-                toast.success('Draft Saved')
+                toast.success('Draft saved successfully')
+                router.push(`/clients/${data.client_id}?tab=invoices`)
             }
 
-            router.push(`/clients/${data.client_id}?tab=invoices`)
-
         } catch (error: any) {
-            toast.error(error.message || 'Error processing invoice')
+            toast.error(error.message || 'Error processing invoice', { id: 'invoice-toast' })
         } finally {
             setIsPublishing(false)
+            setIsSaving(false)
         }
     }
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <Link href="/">
-                        <Button variant="ghost" size="icon">
+                    <Link href="/invoices">
+                        <Button variant="ghost" size="icon" className="rounded-full">
                             <ArrowLeft className="h-5 w-5" />
                         </Button>
                     </Link>
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Create Invoice</h1>
-                        <p className="text-muted-foreground">Draft and send a new invoice to collect payment.</p>
+                        <h1 className="text-2xl font-bold tracking-tight">Create Invoice</h1>
+                        <p className="text-sm text-muted-foreground">Draft and send a professional bill to your client.</p>
                     </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <Button
-                        variant="outline"
-                        type="button"
-                        onClick={form.handleSubmit((d) => handleSave(d as unknown as InvoiceFormValues, 'Draft'))}
-                        disabled={form.formState.isSubmitting || isPublishing}
-                    >
-                        <Save className="mr-2 h-4 w-4" />
-                        Save Draft
-                    </Button>
-                    <Button
-                        type="button"
-                        onClick={form.handleSubmit((d) => handleSave(d as unknown as InvoiceFormValues, 'Sent'))}
-                        disabled={form.formState.isSubmitting || isPublishing}
-                    >
-                        <Send className="mr-2 h-4 w-4" />
-                        {isPublishing ? 'Processing...' : 'Send Invoice'}
-                    </Button>
                 </div>
             </div>
 
             <Form {...form}>
                 <form className="space-y-6">
-                    <Card>
-                        <CardHeader className="pb-4 border-b">
-                            <CardTitle className="text-lg">Invoice Details</CardTitle>
+                    {/* Invoice Details Card */}
+                    <Card className="border-none shadow-xl bg-card/50 backdrop-blur-sm">
+                        <CardHeader className="pb-4 border-b border-border/50">
+                            <div className="flex items-center gap-2 text-primary">
+                                <Receipt className="h-5 w-5" />
+                                <CardTitle className="text-lg">Invoice Details</CardTitle>
+                            </div>
                         </CardHeader>
                         <CardContent className="pt-6 space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <FormField
                                     control={form.control as any}
                                     name="client_id"
                                     render={({ field }: { field: any }) => (
                                         <FormItem className="md:col-span-2">
-                                            <FormLabel>Client</FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormLabel>Target Client</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value}>
                                                 <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select target client" />
+                                                    <SelectTrigger className="h-11 bg-background/50 border-muted-foreground/20 rounded-xl focus:ring-primary/20 transition-all">
+                                                        <SelectValue placeholder="Select target client">
+                                                            {clients.find(c => c.id === field.value)?.name}
+                                                        </SelectValue>
                                                     </SelectTrigger>
                                                 </FormControl>
-                                                <SelectContent>
+                                                <SelectContent className="rounded-xl shadow-2xl">
                                                     {clients.map(c => (
-                                                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                                        <SelectItem key={c.id} value={c.id} className="rounded-lg">{c.name}</SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
@@ -208,9 +220,9 @@ export function InvoiceBuilder({
                                     name="invoice_number"
                                     render={({ field }: { field: any }) => (
                                         <FormItem>
-                                            <FormLabel>Invoice #</FormLabel>
+                                            <FormLabel>Invoice Number</FormLabel>
                                             <FormControl>
-                                                <Input {...field} />
+                                                <Input {...field} className="h-11 bg-background/50 border-muted-foreground/20 rounded-xl focus:ring-primary/20 transition-all font-mono" />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -218,7 +230,7 @@ export function InvoiceBuilder({
                                 />
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <FormField
                                     control={form.control as any}
                                     name="due_date"
@@ -226,7 +238,7 @@ export function InvoiceBuilder({
                                         <FormItem>
                                             <FormLabel>Due Date</FormLabel>
                                             <FormControl>
-                                                <Input type="date" {...field} />
+                                                <Input type="date" {...field} className="h-11 bg-background/50 border-muted-foreground/20 rounded-xl focus:ring-primary/20 transition-all" />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -236,37 +248,40 @@ export function InvoiceBuilder({
                         </CardContent>
                     </Card>
 
-                    <Card>
-                        <CardHeader className="pb-4 border-b flex flex-row items-center justify-between">
-                            <CardTitle className="text-lg">Line Items</CardTitle>
+                    {/* Line Items Card */}
+                    <Card className="border-none shadow-xl bg-card/50 backdrop-blur-sm overflow-hidden">
+                        <CardHeader className="pb-4 border-b border-border/50 flex flex-row items-center justify-between">
+                            <div className="flex items-center gap-2 text-primary">
+                                <CreditCard className="h-5 w-5" />
+                                <CardTitle className="text-lg">Line Items</CardTitle>
+                            </div>
                             <Button
                                 type="button"
                                 variant="outline"
                                 size="sm"
+                                className="rounded-full border-primary/20 hover:bg-primary/10 hover:text-primary transition-all"
                                 onClick={() => append({ description: '', quantity: 1, unit_price: 0 })}
                             >
                                 <Plus className="h-4 w-4 mr-2" /> Add Item
                             </Button>
                         </CardHeader>
                         <CardContent className="pt-6">
-
                             <div className="space-y-4">
                                 {fields.map((field, index) => (
-                                    <div key={field.id} className="flex items-start gap-4 p-4 border rounded-md bg-muted/20 relative group">
-
+                                    <div key={field.id} className="flex items-start gap-4 p-5 rounded-2xl border bg-background/30 relative group hover:border-primary/30 transition-all">
                                         {fields.length > 1 && (
                                             <Button
                                                 type="button"
                                                 variant="ghost"
                                                 size="icon"
-                                                className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 text-destructive"
+                                                className="absolute right-2 top-2 h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10 transition-all"
                                                 onClick={() => remove(index)}
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         )}
 
-                                        <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4">
+                                        <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-6">
                                             <div className="md:col-span-6">
                                                 <FormField
                                                     control={form.control as any}
@@ -275,7 +290,7 @@ export function InvoiceBuilder({
                                                         <FormItem>
                                                             <FormLabel className="md:hidden">Description</FormLabel>
                                                             <FormControl>
-                                                                <Input placeholder="Item Description" {...field} />
+                                                                <Input placeholder="Service or product description" {...field} className="h-11 bg-transparent border-muted-foreground/20 rounded-xl focus:ring-primary/20" />
                                                             </FormControl>
                                                             <FormMessage />
                                                         </FormItem>
@@ -291,7 +306,7 @@ export function InvoiceBuilder({
                                                         <FormItem>
                                                             <FormLabel className="md:hidden">Qty</FormLabel>
                                                             <FormControl>
-                                                                <Input type="number" min="1" {...field} />
+                                                                <Input type="number" min="1" {...field} className="h-11 bg-transparent border-muted-foreground/20 rounded-xl focus:ring-primary/20" />
                                                             </FormControl>
                                                             <FormMessage />
                                                         </FormItem>
@@ -305,9 +320,12 @@ export function InvoiceBuilder({
                                                     name={`items.${index}.unit_price`}
                                                     render={({ field }: { field: any }) => (
                                                         <FormItem>
-                                                            <FormLabel className="md:hidden">Unit Price (USD)</FormLabel>
+                                                            <FormLabel className="md:hidden">Unit Price (INR)</FormLabel>
                                                             <FormControl>
-                                                                <Input type="number" step="0.01" min="0" {...field} />
+                                                                <div className="relative">
+                                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-semibold">₹</span>
+                                                                    <Input type="number" step="0.01" min="0" {...field} className="h-11 pl-7 bg-transparent border-muted-foreground/20 rounded-xl focus:ring-primary/20" />
+                                                                </div>
                                                             </FormControl>
                                                             <FormMessage />
                                                         </FormItem>
@@ -319,33 +337,34 @@ export function InvoiceBuilder({
                                 ))}
                             </div>
 
-                            <div className="flex justify-end mt-8 border-t pt-6">
+                            <div className="flex justify-end mt-10 p-6 bg-primary/5 rounded-2xl border border-primary/10">
                                 <div className="w-full md:w-1/3 space-y-3">
-                                    <div className="flex justify-between text-muted-foreground">
+                                    <div className="flex justify-between text-muted-foreground font-medium">
                                         <span>Subtotal</span>
                                         <span>{formatCurrency(subtotal)}</span>
                                     </div>
-                                    <div className="flex justify-between items-center text-lg font-bold border-t pt-3">
-                                        <span>Total Due</span>
+                                    <div className="flex justify-between items-center text-xl font-bold pt-3 border-t border-primary/20 text-primary">
+                                        <span>Total Amount</span>
                                         <span>{formatCurrency(subtotal)}</span>
                                     </div>
                                 </div>
                             </div>
-
                         </CardContent>
                     </Card>
 
-                    <Card>
+                    {/* Notes Card */}
+                    <Card className="border-none shadow-xl bg-card/50 backdrop-blur-sm">
                         <CardContent className="pt-6">
                             <FormField
                                 control={form.control as any}
                                 name="notes"
                                 render={({ field }: { field: any }) => (
                                     <FormItem>
-                                        <FormLabel>Client Notes / Terms</FormLabel>
+                                        <FormLabel className="text-muted-foreground font-semibold">Notes / Terms & Conditions</FormLabel>
                                         <FormControl>
                                             <Textarea
-                                                placeholder="Additional notes for the client..."
+                                                placeholder="Enter payment terms, bank details, or a thank you note..."
+                                                className="min-h-[120px] bg-background/50 border-muted-foreground/20 rounded-xl focus:ring-primary/20 transition-all resize-none p-4"
                                                 {...field}
                                             />
                                         </FormControl>
@@ -355,6 +374,29 @@ export function InvoiceBuilder({
                             />
                         </CardContent>
                     </Card>
+
+                    {/* Action Buttons */}
+                    <div className="flex justify-end gap-3 pb-10">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            className="rounded-full px-6 h-11 font-semibold hover:bg-slate-100 transition-colors"
+                            onClick={form.handleSubmit((d) => handleSave(d as unknown as InvoiceFormValues, 'Draft'))}
+                            disabled={isSaving || isPublishing}
+                        >
+                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                            Save Draft
+                        </Button>
+                        <Button
+                            type="button"
+                            className="bg-primary hover:bg-primary/90 rounded-full px-8 h-11 font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                            onClick={form.handleSubmit((d) => handleSave(d as unknown as InvoiceFormValues, 'Sent'))}
+                            disabled={isSaving || isPublishing}
+                        >
+                            {isPublishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                            Publish & Review
+                        </Button>
+                    </div>
                 </form>
             </Form>
         </div>

@@ -62,24 +62,12 @@ export function LogOutreachDialog({
 
     async function onSubmit(data: OutreachFormValues) {
         try {
-            const { data: userData } = await supabase.auth.getUser()
-            if (!userData.user) throw new Error('Not authenticated')
-
-            const { data: profile } = await supabase
-                .from('users')
-                .select('workspace_id')
-                .eq('id', userData.user.id)
-                .single()
-
-            if (!profile) throw new Error('Profile not found')
-
             const { error } = await supabase.from('outreach_log').insert({
                 client_id: data.client_id,
-                user_id: userData.user.id,
-                workspace_id: profile.workspace_id,
                 channel: data.channel,
                 status: data.status,
                 notes: data.notes || '',
+                // user_id and workspace_id are missing in DB schema, omitting to fix insert error
             })
 
             if (error) throw error
@@ -89,6 +77,7 @@ export function LogOutreachDialog({
                 client_id: data.client_id,
                 action_type: 'outreach',
                 description: `Logged ${data.channel} outreach (${data.status})`
+                // activity_log table also has no workspace_id column in migration, but actor_id exists if needed
             })
 
             toast.success('Outreach logged successfully')
@@ -129,10 +118,12 @@ export function LogOutreachDialog({
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Client / Lead</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!!defaultClientId}>
+                                    <Select value={field.value} onValueChange={field.onChange} disabled={!!defaultClientId}>
                                         <FormControl>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Search connected clients..." />
+                                                <SelectValue placeholder="Search connected clients...">
+                                                    {clients.find(c => c.id === field.value)?.name}
+                                                </SelectValue>
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
@@ -153,7 +144,7 @@ export function LogOutreachDialog({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Channel</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <Select value={field.value} onValueChange={field.onChange}>
                                             <FormControl>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Select" />
@@ -178,7 +169,7 @@ export function LogOutreachDialog({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Status / Outcome</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <Select value={field.value} onValueChange={field.onChange}>
                                             <FormControl>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Select" />

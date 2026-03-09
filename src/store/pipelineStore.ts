@@ -4,6 +4,9 @@ export interface ClientData {
     id: string
     name: string
     company: string | null
+    email: string | null
+    phone: string | null
+    website: string | null
     deal_value: number
     stage: number
     assigned_to: string | null

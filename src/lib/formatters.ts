@@ -1,8 +1,9 @@
 export function formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
         style: 'currency',
-        currency: 'USD',
-    }).format(amount / 100) // Amounts are stored in cents
+        currency: 'INR',
+        maximumFractionDigits: 0,
+    }).format(amount) // deal_value is stored as whole rupees
 }
 
 export function calculateDaysInStage(updatedAt: string): number {

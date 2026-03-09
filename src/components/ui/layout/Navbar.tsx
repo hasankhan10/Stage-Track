@@ -1,24 +1,37 @@
 'use client'
 
-import { Bell, Search, Menu, LogOut, User as UserIcon } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { Bell, Search, Menu } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import { NotificationBell } from '@/components/notifications/NotificationBell'
 
 export function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
     const router = useRouter()
-    const supabase = createClient()
+    const supabase = useMemo(() => createClient(), [])
+    const [initials, setInitials] = useState('ME')
+
+    useEffect(() => {
+        async function fetchUser() {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user) {
+                const { data: profile } = await supabase
+                    .from('users')
+                    .select('name')
+                    .eq('id', user.id)
+                    .single()
+                const name = profile?.name || user.email || 'Me'
+                const parts = name.trim().split(' ')
+                const derived = parts.length >= 2
+                    ? `${parts[0][0]}${parts[parts.length - 1][0]}`
+                    : name.slice(0, 2)
+                setInitials(derived.toUpperCase())
+            }
+        }
+        fetchUser()
+    }, [supabase])
 
     async function handleLogout() {
         await supabase.auth.signOut()
@@ -52,31 +65,6 @@ export function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
 
             <div className="ml-auto flex items-center gap-4">
                 <NotificationBell />
-
-                {/* User Profile */}
-                <DropdownMenu>
-                    <DropdownMenuTrigger
-                        render={
-                            <Button variant="ghost" size="icon" className="rounded-full">
-                                <Avatar className="h-8 w-8 bg-primary">
-                                    <AvatarFallback className="text-primary-foreground">AD</AvatarFallback>
-                                </Avatar>
-                            </Button>
-                        }
-                    />
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem>
-                            <UserIcon className="mr-2 h-4 w-4" />
-                            <span>Profile</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleLogout}>
-                            <LogOut className="mr-2 h-4 w-4" />
-                            <span>Log out</span>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
             </div>
         </header>
     )

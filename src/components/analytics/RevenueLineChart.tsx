@@ -92,7 +92,7 @@ export function RevenueLineChart() {
                                 fontSize={10}
                                 tickLine={false}
                                 axisLine={false}
-                                tickFormatter={(value) => `$${value}`}
+                                tickFormatter={(value) => `₹${value}`}
                                 tick={{ fill: 'currentColor', opacity: 0.6 }}
                             />
                             <Tooltip
@@ -102,7 +102,7 @@ export function RevenueLineChart() {
                                     borderRadius: '8px',
                                     fontSize: '12px'
                                 }}
-                                formatter={(value: any) => [`$${Number(value).toLocaleString()}`, 'Revenue']}
+                                formatter={(value: any) => [`₹${Number(value).toLocaleString('en-IN')}`, 'Revenue']}
                             />
                             <Line
                                 type="monotone"

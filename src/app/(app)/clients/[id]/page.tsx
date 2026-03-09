@@ -2,6 +2,8 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import { ClientHeader } from '@/components/clients/ClientHeader'
 import { ClientTabs } from '@/components/clients/ClientTabs'
+import Link from 'next/link'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 export default async function ClientProfilePage({
     params,
@@ -32,12 +34,26 @@ export default async function ClientProfilePage({
         .single()
 
     if (error || !client) {
-        // Return a 404 or redirect back to pipeline
-        return redirect('/pipeline')
+        return redirect('/clients')
     }
 
     return (
         <div className="flex flex-col gap-6">
+            {/* Back navigation */}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Link
+                    href="/clients"
+                    className="flex items-center gap-1 hover:text-foreground transition-colors font-medium group"
+                >
+                    <ChevronLeft className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
+                    Clients
+                </Link>
+                <ChevronRight className="h-3.5 w-3.5 opacity-50" />
+                <span className="text-foreground font-semibold truncate max-w-[260px]">
+                    {client.name}
+                </span>
+            </div>
+
             <ClientHeader client={client} />
             <div className="bg-background rounded-lg border shadow-sm p-4 h-[calc(100vh-16rem)] overflow-y-auto">
                 <ClientTabs client={client} />

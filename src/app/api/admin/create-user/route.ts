@@ -60,8 +60,59 @@ export async function POST(req: Request) {
             })
 
         if (dbError) throw dbError
+        console.log('✅ User created in DB:', authUser.user.id)
 
-        return NextResponse.json({ message: 'User created successfully', user: authUser.user })
+        // 4. Send Welcome Email via Resend
+        let emailSent = false
+        try {
+            console.log('📧 Preparing to send email via Resend...')
+            const { resend } = await import('@/lib/resend')
+
+            const { data: workspace } = await adminClient
+                .from('workspaces')
+                .select('name')
+                .eq('id', currentUserProfile.workspace_id)
+                .single()
+
+            const emailResponse = await resend.emails.send({
+                from: `StageTrack <onboarding@${process.env.RESEND_DOMAIN || 'resend.dev'}>`,
+                to: [email],
+                subject: `Welcome to ${workspace?.name || 'StageTrack'}`,
+                html: `
+                    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
+                        <h1 style="color: #1e3a5f; margin-bottom: 24px;">Welcome to the Team, ${name}!</h1>
+                        <p style="font-size: 16px; color: #4b5563; line-height: 1.6;">
+                            You have been invited to join <strong>${workspace?.name || 'StageTrack'}</strong>.
+                        </p>
+                        <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 24px 0; border: 1px solid #e2e8f0;">
+                            <p style="margin: 0 0 10px 0; color: #64748b; font-size: 14px;">Your Login Credentials:</p>
+                            <p style="margin: 0; font-size: 16px;"><strong>Email:</strong> ${email}</p>
+                            <p style="margin: 5px 0 0 0; font-size: 16px;"><strong>Password:</strong> ${password}</p>
+                        </div>
+                        <a href="${process.env.NEXT_PUBLIC_APP_URL}/login" 
+                           style="display: inline-block; background-color: #1e3a5f; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+                            Login to Dashboard
+                        </a>
+                    </div>
+                `
+            })
+
+            if (emailResponse.error) {
+                console.error('❌ Resend Error:', emailResponse.error)
+            } else {
+                console.log('✅ Email sent successfully:', emailResponse.data?.id)
+                emailSent = true
+            }
+        } catch (emailErr: any) {
+            console.error('❌ Critical Email Failure:', emailErr.message)
+        }
+
+        return NextResponse.json({
+            message: emailSent ? 'User created and email sent!' : 'User created, but email delivery failed (Check Resend Dashboard).',
+            user: authUser.user,
+            emailSent,
+            tempPassword: password
+        })
     } catch (error: any) {
         console.error('Error in create-user API:', error)
         return NextResponse.json({ error: error.message }, { status: 500 })

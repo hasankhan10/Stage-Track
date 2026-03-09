@@ -5,7 +5,7 @@ import { Receipt, FilePlus } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { formatCurrency } from '@/lib/formatters'
 import Link from 'next/link'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 export const metadata = { title: 'Invoices | StageTrack' }
@@ -43,13 +43,12 @@ export default async function InvoicesPage() {
                     <h2 className="text-3xl font-bold tracking-tight text-primary">Invoices</h2>
                     <p className="text-muted-foreground">Manage billing, collect payments via Stripe.</p>
                 </div>
-                <Link
-                    href="/invoices/new"
-                    className={cn(buttonVariants({ variant: 'default' }))}
-                >
-                    <FilePlus className="mr-2 h-4 w-4" />
-                    Create Invoice
-                </Link>
+                <Button asChild>
+                    <Link href="/invoices/new">
+                        <FilePlus className="mr-2 h-4 w-4" />
+                        Create Invoice
+                    </Link>
+                </Button>
             </div>
 
             {typedInvoices.length === 0 ? (
@@ -58,7 +57,7 @@ export default async function InvoicesPage() {
                     title="No invoices found"
                     description="Create your first invoice to get paid."
                     ctaLabel="Create Invoice"
-                    ctaAction={() => { }} // Won't function without "use client", relying on Button above
+                    ctaHref="/invoices/new"
                 />
             ) : (
                 <div className="rounded-lg border shadow-sm overflow-hidden bg-card">

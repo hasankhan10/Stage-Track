@@ -14,21 +14,19 @@ import {
     MessageSquare,
     FileCheck,
     Receipt,
-    Folder,
     AlignLeft,
     Activity,
-    Flag
+    Upload
 } from 'lucide-react'
 import { CreateTaskDialog } from '@/components/tasks/CreateTaskDialog'
 import { LogOutreachDialog } from '@/components/outreach/LogOutreachDialog'
 import { FileList } from '@/components/files/FileList'
 import { FileUploader } from '@/components/files/FileUploader'
 import { MilestoneTracker } from '@/components/projects/MilestoneTracker'
+import { ClientProposals } from '@/components/clients/ClientProposals'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Upload } from 'lucide-react'
 
-// Placeholder Tab Content Components till we build each feature out fully
 function OverviewTab({ client }: { client: any }) {
     return (
         <div className="space-y-6">
@@ -118,13 +116,7 @@ export function ClientTabs({ client }: { client: any }) {
             </TabsContent>
 
             <TabsContent value="proposals" className="mt-0">
-                <EmptyState
-                    icon={FileText}
-                    title="No Proposals"
-                    description="Build and send proposals directly from here."
-                    ctaLabel="Create Proposal"
-                    ctaAction={() => window.location.href = '/proposals/new'}
-                />
+                <ClientProposals clientId={client.id} />
             </TabsContent>
 
             <TabsContent value="contracts" className="mt-0">

@@ -44,11 +44,11 @@ export function PipelineBoard() {
             const { data, error } = await supabase
                 .from('clients')
                 .select(`
-          id, name, company, deal_value, stage, assigned_to, created_at, updated_at,
-          users (
-            name, email
-          )
-        `)
+                    id, name, company, email, phone, website, deal_value, stage, assigned_to, created_at, updated_at,
+                    users (
+                        name, email
+                    )
+                `)
 
             if (error) {
                 toast.error('Failed to load pipeline: ' + error.message)

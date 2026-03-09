@@ -1,5 +1,5 @@
 import { FileQuestion, type LucideIcon } from 'lucide-react'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 
@@ -34,12 +34,11 @@ export function EmptyState({
 
             <div className="flex gap-3">
                 {ctaLabel && ctaHref && (
-                    <Link
-                        href={ctaHref}
-                        className={cn(buttonVariants({ size: "lg" }), "shadow-lg shadow-primary/20")}
-                    >
-                        {ctaLabel}
-                    </Link>
+                    <Button asChild size="lg" className="shadow-lg shadow-primary/20">
+                        <Link href={ctaHref}>
+                            {ctaLabel}
+                        </Link>
+                    </Button>
                 )}
 
                 {ctaLabel && ctaAction && !ctaHref && (
