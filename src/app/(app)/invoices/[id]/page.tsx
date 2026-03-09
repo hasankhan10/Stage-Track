@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { PrintInvoiceButton } from '@/components/invoices/PrintInvoiceButton'
 
-export const metadata = { title: 'Invoice Details | Stova Media' }
+export const metadata = { title: 'Invoice Details | Your Brand' }
 
 export default async function InvoiceViewPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params

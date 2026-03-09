@@ -1,17 +1,13 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
+import { unstable_cache } from 'next/cache'
+import { createCacheClient } from '@/utils/supabase/cache-client'
 import { KPICards } from '@/components/analytics/KPICards'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
-  Plus,
-  ArrowRight,
-  TrendingUp,
-  Calendar,
-  CheckSquare,
-  FileText,
-  ArrowUpRight,
-  Search
+  Plus, ArrowRight, TrendingUp, Calendar,
+  CheckSquare, FileText, ArrowUpRight, Search
 } from 'lucide-react'
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
@@ -19,44 +15,42 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 
 export const metadata = {
-  title: 'Dashboard | Stova Media',
+  title: 'Dashboard | Your Brand',
 }
 
 export default async function DashboardPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  // Middleware runs getUser() on every request — cookie is already verified. Safe.
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) return redirect('/login')
 
-  if (!user) {
-    return redirect('/login')
-  }
+  const token = session.access_token
+  const userId = session.user.id
 
-  // Fetch user profile
-  const { data: profile } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', user.id)
-    .single()
-
-  // Fetch recent activity
-  const { data: activities } = await supabase
-    .from('activity_log')
-    .select(`
-            *,
-            clients ( name )
-        `)
-    .order('created_at', { ascending: false })
-    .limit(5)
-
-  // Fetch upcoming tasks
-  const { data: tasks } = await supabase
-    .from('tasks')
-    .select(`
-            *,
-            clients ( name )
-        `)
-    .eq('status', 'Pending')
-    .order('due_date', { ascending: true, nullsFirst: false })
-    .limit(5)
+  const { profile, activities, tasks } = await unstable_cache(
+    async () => {
+      const db = createCacheClient(token)
+      const [profileRes, activitiesRes, tasksRes] = await Promise.all([
+        db.from('users').select('name, role').eq('id', userId).single(),
+        db.from('activity_log')
+          .select('id, action_type, description, created_at, clients ( name )')
+          .order('created_at', { ascending: false })
+          .limit(5),
+        db.from('tasks')
+          .select('id, title, priority, due_date, clients ( name )')
+          .eq('status', 'Pending')
+          .order('due_date', { ascending: true, nullsFirst: false })
+          .limit(5),
+      ])
+      return {
+        profile: profileRes.data,
+        activities: activitiesRes.data ?? [],
+        tasks: tasksRes.data ?? [],
+      }
+    },
+    [`dashboard-${userId}`],
+    { revalidate: 60, tags: [`dashboard-${userId}`, 'dashboard'] }
+  )()
 
   const firstName = profile?.name?.split(' ')[0] || 'there'
   const hour = new Date().getHours()
@@ -64,7 +58,6 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Header / Welcome Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
@@ -90,13 +83,10 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* KPI Section */}
       <KPICards />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content Area: Recent Activity & Quick Links */}
         <div className="lg:col-span-2 space-y-8">
-          {/* Recent Activity Feed */}
           <Card className="border-none shadow-premium bg-card/50 backdrop-blur-sm overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between">
               <div className="space-y-1">
@@ -107,13 +97,11 @@ export default async function DashboardPage() {
                 <CardDescription>Key updates across your workspace</CardDescription>
               </div>
               <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80 gap-1 font-semibold" asChild>
-                <Link href="/analytics">
-                  Full Report <ArrowRight className="h-4 w-4" />
-                </Link>
+                <Link href="/analytics">Full Report <ArrowRight className="h-4 w-4" /></Link>
               </Button>
             </CardHeader>
             <CardContent className="p-0">
-              {activities && activities.length > 0 ? (
+              {activities.length > 0 ? (
                 <div className="divide-y divide-border/50">
                   {activities.map((activity) => (
                     <div key={activity.id} className="flex gap-4 p-5 hover:bg-muted/30 transition-colors group">
@@ -130,19 +118,15 @@ export default async function DashboardPage() {
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-medium">
                             <span className="text-foreground font-semibold">
-                              {activity.clients?.name || 'A client'}
+                              {(activity.clients as any)?.name || 'A client'}
                             </span>
-                            <span className="text-muted-foreground ml-1">
-                              was updated
-                            </span>
+                            <span className="text-muted-foreground ml-1">was updated</span>
                           </p>
-                          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full" suppressHydrationWarning>
                             {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
                           </span>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          {activity.description}
-                        </p>
+                        <p className="text-sm text-muted-foreground">{activity.description}</p>
                       </div>
                     </div>
                   ))}
@@ -159,7 +143,6 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Quick Access Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Link href="/invoices/new" className="group">
               <Card className="hover:border-primary/50 transition-all hover:bg-muted/20 border-border/50">
@@ -171,7 +154,7 @@ export default async function DashboardPage() {
                     <ArrowUpRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
                   <h3 className="mt-4 font-bold text-lg">Send Invoice</h3>
-                  <p className="text-sm text-muted-foreground">Get paid faster by creating a Stripe invoice.</p>
+                  <p className="text-sm text-muted-foreground">Get paid faster by creating a professional invoice.</p>
                 </CardContent>
               </Card>
             </Link>
@@ -192,9 +175,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Sidebar Column: Upcoming Tasks & Stats */}
         <div className="space-y-8">
-          {/* Upcoming Tasks */}
           <Card className="border-none shadow-premium bg-card/80">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -203,22 +184,17 @@ export default async function DashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {tasks && tasks.length > 0 ? (
+              {tasks.length > 0 ? (
                 tasks.map((task) => (
                   <div key={task.id} className="group relative flex flex-col gap-1 p-3 rounded-lg border border-border/50 hover:border-primary/50 bg-background/50 hover:bg-background transition-all">
                     <div className="flex items-start justify-between gap-2">
                       <h4 className="text-sm font-semibold line-clamp-1 group-hover:text-primary transition-colors">{task.title}</h4>
-                      <Badge variant="outline" className="text-[10px] uppercase tracking-wider">
-                        {task.priority}
-                      </Badge>
+                      <Badge variant="outline" className="text-[10px] uppercase tracking-wider">{task.priority}</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <span className="font-medium text-foreground">{task.clients?.name}</span>
+                      <span className="font-medium text-foreground">{(task.clients as any)?.name}</span>
                       {task.due_date && (
-                        <>
-                          <span className="mx-1">•</span>
-                          <span>Due {new Date(task.due_date).toLocaleDateString()}</span>
-                        </>
+                        <><span className="mx-1">•</span><span>Due {new Date(task.due_date).toLocaleDateString()}</span></>
                       )}
                     </p>
                   </div>
@@ -235,7 +211,6 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Tip of the day or similar utility */}
           <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 shadow-none">
             <CardContent className="p-6">
               <Badge className="mb-3 bg-primary text-white border-0">Pro Tip</Badge>

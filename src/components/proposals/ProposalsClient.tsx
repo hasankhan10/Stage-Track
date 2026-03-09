@@ -1,34 +1,20 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useMemo, useCallback } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import {
     FileText,
     TrendingUp,
     Send,
     CheckCircle2,
-    Clock,
     Search,
     Plus,
-    MoreHorizontal,
     Trash2,
-    ArrowRight,
-    Copy,
-    ExternalLink,
     AlertCircle,
     Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import {
     Dialog,
     DialogContent,
@@ -39,40 +25,17 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { formatCurrency } from '@/lib/formatters'
-import { formatDistanceToNow } from 'date-fns'
 import Link from 'next/link'
-
-interface Proposal {
-    id: string
-    title: string
-    client_id: string
-    status: 'draft' | 'sent' | 'accepted' | 'declined' | 'viewed'
-    total_value: number
-    token: string
-    created_at: string
-    updated_at: string
-    clients: {
-        name: string
-        company: string | null
-    }
-}
+import { Proposal } from './types'
+import { ProposalRow, ProposalKPICard } from './ProposalComponents'
 
 interface ProposalsClientProps {
     initialProposals: any[]
     clients: { id: string, name: string }[]
 }
 
-const STATUS_CONFIG = {
-    draft: { label: 'Draft', color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300', icon: Clock },
-    sent: { label: 'Sent', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300', icon: Send },
-    accepted: { label: 'Accepted', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300', icon: CheckCircle2 },
-    declined: { label: 'Declined', color: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300', icon: AlertCircle },
-    viewed: { label: 'Viewed', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300', icon: ExternalLink },
-}
-
 export function ProposalsClient({ initialProposals, clients }: ProposalsClientProps) {
-    const router = useRouter()
-    const supabase = createClient()
+    const supabase = useMemo(() => createClient(), [])
     const [proposals, setProposals] = useState<Proposal[]>(initialProposals as Proposal[])
     const [searchQuery, setSearchQuery] = useState('')
     const [statusFilter, setStatusFilter] = useState<string>('all')
@@ -80,7 +43,6 @@ export function ProposalsClient({ initialProposals, clients }: ProposalsClientPr
     const [deleteOpen, setDeleteOpen] = useState(false)
     const [proposalToDelete, setProposalToDelete] = useState<Proposal | null>(null)
 
-    // Calculate Stats
     const stats = useMemo(() => {
         const total = proposals.length
         const totalValue = proposals.reduce((acc, p) => acc + (p.total_value || 0), 0)
@@ -98,7 +60,6 @@ export function ProposalsClient({ initialProposals, clients }: ProposalsClientPr
         return { totalValue, activeValue, acceptedValue, winRate }
     }, [proposals])
 
-    // Filtered list
     const filteredProposals = useMemo(() => {
         return proposals.filter(p => {
             const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -108,7 +69,7 @@ export function ProposalsClient({ initialProposals, clients }: ProposalsClientPr
         })
     }, [proposals, searchQuery, statusFilter])
 
-    async function handleDelete() {
+    const handleDelete = useCallback(async () => {
         if (!proposalToDelete) return
         setIsDeleting(true)
         try {
@@ -127,13 +88,11 @@ export function ProposalsClient({ initialProposals, clients }: ProposalsClientPr
         } finally {
             setIsDeleting(false)
         }
-    }
+    }, [proposalToDelete, supabase])
 
-    async function handlePublish(proposal: Proposal) {
+    const handlePublish = useCallback(async (proposal: Proposal) => {
         try {
             toast.loading('Generating Premium PDF...', { id: 'publish-toast' })
-
-            // 1. Update Status to 'sent' (which makes it live)
             const { error } = await supabase
                 .from('proposals')
                 .update({ status: 'sent', sent_at: new Date().toISOString() })
@@ -141,12 +100,10 @@ export function ProposalsClient({ initialProposals, clients }: ProposalsClientPr
 
             if (error) throw error
 
-            // 2. Simulate PDF Optimization
             await new Promise(r => setTimeout(r, 1200))
             toast.loading('Optimizing Document Layout...', { id: 'publish-toast' })
             await new Promise(r => setTimeout(r, 1000))
 
-            // 3. Success with View Action
             setProposals(prev => prev.map(p =>
                 p.id === proposal.id ? { ...p, status: 'sent' } : p
             ))
@@ -163,16 +120,15 @@ export function ProposalsClient({ initialProposals, clients }: ProposalsClientPr
         } catch (error) {
             toast.error('Failed to publish proposal', { id: 'publish-toast' })
         }
-    }
+    }, [supabase])
 
-    async function handleSendEmail(proposal: Proposal) {
+    const handleSendEmail = useCallback(async (proposal: Proposal) => {
         try {
             toast.loading('Preparing Premium Email Delivery...', { id: 'send-email-toast' })
             await new Promise(r => setTimeout(r, 1500))
             toast.loading('Attaching Encrypted Proposal...', { id: 'send-email-toast' })
             await new Promise(r => setTimeout(r, 1000))
 
-            // Success
             toast.success('Email Sent Successfully!', {
                 id: 'send-email-toast',
                 description: `Sent to ${proposal.clients.name}'s verified email.`,
@@ -181,22 +137,21 @@ export function ProposalsClient({ initialProposals, clients }: ProposalsClientPr
         } catch (error) {
             toast.error('Failed to send email', { id: 'send-email-toast' })
         }
-    }
+    }, [])
 
-    async function copySignLink(token: string) {
+    const copySignLink = useCallback(async (token: string) => {
         try {
             if (!token) {
                 toast.error('No access token found for this proposal.')
                 return
             }
-
             const url = `${window.location.origin}/portal?token=${token}`
             await navigator.clipboard.writeText(url)
             toast.success('Sign-off link copied to clipboard!')
         } catch (err) {
             toast.error('Failed to copy link')
         }
-    }
+    }, [])
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -220,34 +175,10 @@ export function ProposalsClient({ initialProposals, clients }: ProposalsClientPr
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <KPICard
-                    title="Total Potentail"
-                    value={formatCurrency(stats.totalValue)}
-                    icon={TrendingUp}
-                    color="text-primary"
-                    bg="bg-primary/10"
-                />
-                <KPICard
-                    title="Active Offers"
-                    value={formatCurrency(stats.activeValue)}
-                    icon={Send}
-                    color="text-blue-600"
-                    bg="bg-blue-500/10"
-                />
-                <KPICard
-                    title="Closed Won"
-                    value={formatCurrency(stats.acceptedValue)}
-                    icon={CheckCircle2}
-                    color="text-emerald-600"
-                    bg="bg-emerald-500/10"
-                />
-                <KPICard
-                    title="Closing Rate"
-                    value={`${stats.winRate}%`}
-                    icon={FileText}
-                    color="text-indigo-600"
-                    bg="bg-indigo-500/10"
-                />
+                <ProposalKPICard title="Total Potential" value={formatCurrency(stats.totalValue)} icon={TrendingUp} color="text-primary" bg="bg-primary/10" />
+                <ProposalKPICard title="Active Offers" value={formatCurrency(stats.activeValue)} icon={Send} color="text-blue-600" bg="bg-blue-500/10" />
+                <ProposalKPICard title="Closed Won" value={formatCurrency(stats.acceptedValue)} icon={CheckCircle2} color="text-emerald-600" bg="bg-emerald-500/10" />
+                <ProposalKPICard title="Closing Rate" value={`${stats.winRate}%`} icon={FileText} color="text-indigo-600" bg="bg-indigo-500/10" />
             </div>
 
             {/* Filters and List */}
@@ -347,107 +278,5 @@ export function ProposalsClient({ initialProposals, clients }: ProposalsClientPr
                 </DialogContent>
             </Dialog>
         </div>
-    )
-}
-
-function KPICard({ title, value, icon: Icon, color, bg }: { title: string, value: string, icon: any, color: string, bg: string }) {
-    return (
-        <div className="bg-card border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{title}</span>
-                <div className={`${bg} ${color} p-2 rounded-xl`}>
-                    <Icon className="h-4 w-4" />
-                </div>
-            </div>
-            <div className="text-2xl font-bold">{value}</div>
-        </div>
-    )
-}
-
-function ProposalRow({ proposal, onDelete, onCopyLink, onPublish, onSendEmail }: { proposal: Proposal, onDelete: () => void, onCopyLink: () => void, onPublish: () => void, onSendEmail: () => void }) {
-    const status = STATUS_CONFIG[proposal.status] || STATUS_CONFIG.draft
-    const statusIcon = status.icon
-
-    return (
-        <tr className="group hover:bg-muted/20 transition-colors">
-            <td className="px-6 py-4">
-                <div className="flex flex-col">
-                    <span className="font-semibold text-sm group-hover:text-primary transition-colors truncate max-w-[200px]">
-                        {proposal.title}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground font-mono">ID: {proposal.id.slice(0, 8)}</span>
-                </div>
-            </td>
-            <td className="px-6 py-4">
-                <div className="flex flex-col">
-                    <span className="text-sm font-medium">{proposal.clients.name}</span>
-                    <span className="text-[11px] text-muted-foreground">{proposal.clients.company || 'Private Client'}</span>
-                </div>
-            </td>
-            <td className="px-6 py-4">
-                <Badge className={`${status.color} border-0 shadow-none hover:opacity-90 flex items-center w-fit gap-1.5 px-3 py-1 rounded-full text-[10px]`}>
-                    <status.icon className="h-3 w-3" />
-                    {status.label}
-                </Badge>
-            </td>
-            <td className="px-6 py-4">
-                <span className="text-sm font-bold text-emerald-600 font-mono">
-                    {formatCurrency(proposal.total_value || 0)}
-                </span>
-            </td>
-            <td className="px-6 py-4">
-                <span className="text-xs text-muted-foreground whitespace-nowrap" suppressHydrationWarning>
-                    {formatDistanceToNow(new Date(proposal.created_at), { addSuffix: true })}
-                </span>
-            </td>
-            <td className="px-6 py-4 text-right">
-                <DropdownMenu drop-down-center>
-                    <DropdownMenuTrigger
-                        render={
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                                <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                        }
-                    />
-                    <DropdownMenuContent align="end" className="w-48 shadow-xl">
-                        {proposal.status === 'draft' && (
-                            <DropdownMenuItem onClick={onPublish} className="text-primary font-semibold gap-2">
-                                <Send className="h-4 w-4" />
-                                Publish Now
-                            </DropdownMenuItem>
-                        )}
-                        {proposal.status !== 'draft' && (
-                            <>
-                                <Link href={`/portal?token=${proposal.token}`} target="_blank">
-                                    <DropdownMenuItem className="gap-2 font-medium">
-                                        <ExternalLink className="h-4 w-4" />
-                                        View Live Portal
-                                    </DropdownMenuItem>
-                                </Link>
-                                <DropdownMenuItem onClick={onSendEmail} className="text-blue-600 font-semibold gap-2">
-                                    <Send className="h-4 w-4" />
-                                    Send in Email
-                                </DropdownMenuItem>
-                            </>
-                        )}
-                        <DropdownMenuItem onClick={onCopyLink} className="gap-2">
-                            <Copy className="h-4 w-4" />
-                            Copy Link
-                        </DropdownMenuItem>
-                        <Link href={`/clients/${proposal.client_id}`}>
-                            <DropdownMenuItem className="gap-2">
-                                <ArrowRight className="h-4 w-4" />
-                                Go to Client
-                            </DropdownMenuItem>
-                        </Link>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive group font-semibold gap-2">
-                            <Trash2 className="h-4 w-4" />
-                            Delete Proposal
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </td>
-        </tr>
     )
 }

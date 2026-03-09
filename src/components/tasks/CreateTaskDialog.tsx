@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -13,21 +13,13 @@ import {
     DialogHeader,
     DialogTitle,
     DialogTrigger,
+    DialogFooter,
 } from '@/components/ui/dialog'
-import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
+import { Form } from '@/components/ui/form'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { Plus } from 'lucide-react'
+import { Plus, Loader2, Sparkles } from 'lucide-react'
+import { TaskFormFields } from './TaskFormFields'
 
 const taskSchema = z.object({
     title: z.string().min(1, 'Title is required'),
@@ -50,7 +42,7 @@ interface CreateTaskDialogProps {
 export function CreateTaskDialog({ clients = [], users = [], defaultClientId, children }: CreateTaskDialogProps) {
     const [open, setOpen] = useState(false)
     const router = useRouter()
-    const supabase = createClient()
+    const supabase = useMemo(() => createClient(), [])
 
     const form = useForm<TaskFormValues>({
         resolver: zodResolver(taskSchema),
@@ -63,7 +55,7 @@ export function CreateTaskDialog({ clients = [], users = [], defaultClientId, ch
         },
     })
 
-    async function onSubmit(data: TaskFormValues) {
+    const onSubmit = useCallback(async (data: TaskFormValues) => {
         try {
             const { data: userData } = await supabase.auth.getUser()
             if (!userData.user) throw new Error('Not authenticated')
@@ -91,162 +83,73 @@ export function CreateTaskDialog({ clients = [], users = [], defaultClientId, ch
             const { error } = await supabase.from('tasks').insert(newTask)
             if (error) throw error
 
-            toast.success('Task created successfully')
+            toast.success('Task Objective Synced')
             setOpen(false)
             form.reset()
             router.refresh()
         } catch (error: any) {
-            toast.error(error.message || 'Failed to create task')
+            toast.error(error.message || 'Failed to sync task')
         }
-    }
+    }, [supabase, form, router])
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger
                 render={
                     (children as any) || (
-                        <Button>
+                        <Button className="rounded-full shadow-premium font-bold h-10 px-6">
                             <Plus className="mr-2 h-4 w-4" />
-                            New Task
+                            Initiate Task
                         </Button>
                     )
                 }
             />
-            <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                    <DialogTitle>Create Task</DialogTitle>
-                    <DialogDescription>
-                        Add a new task to track deliverables or internal to-dos.
+            <DialogContent className="sm:max-w-[520px] rounded-[1.5rem] border-border/40 overflow-hidden bg-card/95 backdrop-blur-xl">
+                <DialogHeader className="p-2">
+                    <div className="flex items-center gap-2 mb-1">
+                        <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+                        <DialogTitle className="text-xl font-black tracking-tight tracking-[-0.02em]">Create New Task</DialogTitle>
+                    </div>
+                    <DialogDescription className="font-medium text-muted-foreground/80">
+                        Define high-level objectives and assign them for execution.
                     </DialogDescription>
                 </DialogHeader>
 
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <FormField
-                            control={form.control}
-                            name="title"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Task Title</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="e.g. Schedule kickoff call" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                        <TaskFormFields
+                            form={form}
+                            clients={clients}
+                            users={users}
+                            defaultClientId={defaultClientId}
                         />
 
-                        <FormField
-                            control={form.control}
-                            name="description"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Description (Optional)</FormLabel>
-                                    <FormControl>
-                                        <Textarea placeholder="Add details..." {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="priority"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Priority</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select priority" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="Low">Low</SelectItem>
-                                                <SelectItem value="Medium">Medium</SelectItem>
-                                                <SelectItem value="High">High</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormField
-                                control={form.control}
-                                name="due_date"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Due Date</FormLabel>
-                                        <FormControl>
-                                            <Input type="date" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="client_id"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Related Client</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value} disabled={!!defaultClientId}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select client">
-                                                        {clients.find(c => c.id === field.value)?.name}
-                                                    </SelectValue>
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="none">No Client (Internal)</SelectItem>
-                                                {clients.map(c => (
-                                                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormField
-                                control={form.control}
-                                name="assigned_to"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Assignee</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select user" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="none">Unassigned</SelectItem>
-                                                {users.map(u => (
-                                                    <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-
-                        <div className="pt-4 flex justify-end gap-2">
-                            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={form.formState.isSubmitting}>
-                                {form.formState.isSubmitting ? 'Saving...' : 'Create Task'}
+                        <DialogFooter className="pt-2 gap-3 sm:gap-0">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                className="rounded-full font-bold h-11 px-8 hover:bg-slate-100"
+                                onClick={() => setOpen(false)}
+                            >
+                                Cancel
                             </Button>
-                        </div>
+                            <Button
+                                type="submit"
+                                disabled={form.formState.isSubmitting}
+                                className="rounded-full h-11 px-10 font-black shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                            >
+                                {form.formState.isSubmitting ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Syncing...
+                                    </>
+                                ) : (
+                                    <>
+                                        Initiate Now
+                                    </>
+                                )}
+                            </Button>
+                        </DialogFooter>
                     </form>
                 </Form>
             </DialogContent>

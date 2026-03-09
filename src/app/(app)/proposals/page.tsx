@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { ProposalsClient } from '@/components/proposals/ProposalsClient'
 
 export const metadata = {
-    title: 'Proposals | Stova Media',
+    title: 'Proposals | Your Brand',
     description: 'Manage and track your business proposals.',
 }
 

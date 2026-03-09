@@ -6,29 +6,26 @@ import { Badge } from '@/components/ui/badge'
 import { formatCurrency } from '@/lib/formatters'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { cachedFetch, cacheTags } from '@/lib/cache'
 
-export const metadata = { title: 'Invoices | Stova Media' }
+export const metadata = { title: 'Invoices | Your Brand' }
 
 export default async function InvoicesPage() {
     const supabase = await createClient()
+    // Middleware calls getUser() on every request — cookie is already verified. Safe.
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return redirect('/login')
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return redirect('/login')
-
-    const { data: invoices } = await supabase
-        .from('invoices')
-        .select(`
-      id,
-      status,
-      total,
-      created_at,
-      line_items,
-      clients ( name )
-    `)
-        .order('created_at', { ascending: false })
-
-    const typedInvoices = invoices || []
+    const invoices = await cachedFetch(
+        cacheTags.invoices(session.user.id), session.access_token,
+        async (db) => {
+            const { data } = await db.from('invoices')
+                .select('id, status, total, created_at, line_items, clients ( name )')
+                .order('created_at', { ascending: false })
+            return data ?? []
+        },
+        { revalidate: 60, tags: [cacheTags.invoices(session.user.id)] }
+    )
 
     function getStatusBadge(statusStr: string, isDraft?: boolean) {
         if (isDraft) return <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-100/80 border-slate-200">Draft</Badge>
@@ -55,14 +52,8 @@ export default async function InvoicesPage() {
                 </Button>
             </div>
 
-            {typedInvoices.length === 0 ? (
-                <EmptyState
-                    icon={Receipt}
-                    title="No invoices found"
-                    description="Create your first invoice to get paid."
-                    ctaLabel="Create Invoice"
-                    ctaHref="/invoices/new"
-                />
+            {invoices.length === 0 ? (
+                <EmptyState icon={Receipt} title="No invoices found" description="Create your first invoice to get paid." ctaLabel="Create Invoice" ctaHref="/invoices/new" />
             ) : (
                 <div className="rounded-lg border shadow-sm overflow-hidden bg-card">
                     <div className="overflow-x-auto">
@@ -77,29 +68,19 @@ export default async function InvoicesPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border">
-                                {typedInvoices.map((inv) => {
+                                {invoices.map((inv) => {
                                     const lineItems = inv.line_items as any
                                     const invNumber = lineItems?.invoice_number || `INV-${inv.id.slice(0, 6)}`
                                     const dueDate = lineItems?.due_date || new Date().toISOString()
                                     return (
                                         <tr key={inv.id} className="hover:bg-muted/20 transition-colors">
                                             <td className="px-6 py-4 font-medium text-foreground">
-                                                <Link href={`/invoices/${inv.id}`} className="hover:underline text-primary">
-                                                    {invNumber}
-                                                </Link>
+                                                <Link href={`/invoices/${inv.id}`} className="hover:underline text-primary">{invNumber}</Link>
                                             </td>
-                                            <td className="px-6 py-4 text-muted-foreground">
-                                                {inv.clients?.name}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                {getStatusBadge(inv.status, lineItems?.is_draft)}
-                                            </td>
-                                            <td className="px-6 py-4 font-semibold text-foreground">
-                                                {formatCurrency(inv.total / 100)}
-                                            </td>
-                                            <td className="px-6 py-4 hidden sm:table-cell text-muted-foreground">
-                                                {new Date(dueDate).toLocaleDateString()}
-                                            </td>
+                                            <td className="px-6 py-4 text-muted-foreground">{(inv.clients as any)?.name}</td>
+                                            <td className="px-6 py-4">{getStatusBadge(inv.status, lineItems?.is_draft)}</td>
+                                            <td className="px-6 py-4 font-semibold text-foreground">{formatCurrency(inv.total / 100)}</td>
+                                            <td className="px-6 py-4 hidden sm:table-cell text-muted-foreground">{new Date(dueDate).toLocaleDateString()}</td>
                                         </tr>
                                     )
                                 })}

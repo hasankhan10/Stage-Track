@@ -1,24 +1,17 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
+import { createClient as createClientBrowser } from '@/utils/supabase/client'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ProfileSettings } from "@/components/settings/ProfileSettings"
-import { WorkspaceSettings } from "@/components/settings/WorkspaceSettings"
-import { TeamManagement } from "@/components/settings/TeamManagement"
-import { User, Shield, Building2 } from "lucide-react"
+import { User } from "lucide-react"
 
+// Settings page renders user-specific data that changes frequently —
+// no aggressive caching needed here, auth guard is sufficient.
 export default async function SettingsPage() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) return redirect('/login')
-
-    const { data: profile } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-
-    const isAdmin = profile?.role === 'admin'
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">

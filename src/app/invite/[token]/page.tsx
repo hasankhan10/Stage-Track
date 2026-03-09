@@ -80,7 +80,7 @@ export default function InvitePage() {
                 <CardHeader className="space-y-2 text-center">
                     <CardTitle className="text-3xl font-bold tracking-tight text-primary">Join Workspace</CardTitle>
                     <CardDescription>
-                        Set your password to join your team on Stova Media
+                        Set your password to join your team on Your Brand
                     </CardDescription>
                 </CardHeader>
                 <form onSubmit={handleSubmit(onSubmit)}>

@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: Props) {
     const { stageId } = await params
     const stage = PIPELINE_STAGES.find(s => s.id === parseInt(stageId))
     return {
-        title: stage ? `${stage.name} | Pipeline | Stova Media` : 'Pipeline Stage | Stova Media',
+        title: stage ? `${stage.name} | Pipeline | Your Brand` : 'Pipeline Stage | Your Brand',
     }
 }
 

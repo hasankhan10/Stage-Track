@@ -1,49 +1,21 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
-import { PIPELINE_STAGES, getStageById } from '@/lib/pipeline'
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select'
+import { PIPELINE_STAGES } from '@/lib/pipeline'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { formatCurrency } from '@/lib/formatters'
-import { CalendarDays, Link as LinkIcon, IndianRupee, MoreVertical, Trash2, ArrowRight, Share2 } from 'lucide-react'
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
-    AlertTriangle,
-    Loader2
-} from 'lucide-react'
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
+import { CalendarDays, IndianRupee } from 'lucide-react'
 import { EditClientDialog } from '@/components/clients/EditClientDialog'
+import { HeaderActions } from './HeaderComponents'
+import { DeleteClientDialog } from './ClientDialogs'
 
 export function ClientHeader({ client }: { client: any }) {
     const router = useRouter()
-    const supabase = createClient()
+    const supabase = useMemo(() => createClient(), [])
     const [isUpdating, setIsUpdating] = useState(false)
     const [isSharing, setIsSharing] = useState(false)
     const [isDeleting, setIsDeleting] = useState(false)
@@ -53,10 +25,9 @@ export function ClientHeader({ client }: { client: any }) {
 
     useEffect(() => setMounted(true), [])
 
-    const stageDefs = getStageById(currentStage)
-    const createdDate = new Date(client.created_at).toLocaleDateString()
+    const createdDate = useMemo(() => new Date(client.created_at).toLocaleDateString(), [client.created_at])
 
-    async function handleShareProgress() {
+    const handleShareProgress = useCallback(async () => {
         setIsSharing(true)
         try {
             const response = await fetch(`/api/clients/${client.id}/share`, {
@@ -75,14 +46,14 @@ export function ClientHeader({ client }: { client: any }) {
         } finally {
             setIsSharing(false)
         }
-    }
+    }, [client.id])
 
-    async function handleStageChange(newStage: number) {
+    const handleStageChange = useCallback(async (newStage: number) => {
         if (newStage === currentStage) return
 
         setIsUpdating(true)
         const oldStage = currentStage
-        setCurrentStage(newStage) // Optimistic update
+        setCurrentStage(newStage)
 
         try {
             const { error } = await supabase
@@ -103,13 +74,13 @@ export function ClientHeader({ client }: { client: any }) {
             router.refresh()
         } catch (error: any) {
             toast.error('Failed to update stage')
-            setCurrentStage(oldStage) // Rollback
+            setCurrentStage(oldStage)
         } finally {
             setIsUpdating(false)
         }
-    }
+    }, [client.id, currentStage, supabase, router])
 
-    async function handleDeleteClient() {
+    const handleDeleteClient = useCallback(async () => {
         setIsDeleting(true)
         try {
             const { error } = await supabase
@@ -125,39 +96,42 @@ export function ClientHeader({ client }: { client: any }) {
             toast.error('Failed to delete client')
             setIsDeleting(false)
         }
-    }
+    }, [client.id, supabase, router])
 
     return (
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-8">
-            <div className="space-y-1">
-                <div className="flex items-center gap-3">
-                    <Avatar className="h-12 w-12 bg-primary/10 text-primary">
-                        <AvatarFallback className="text-xl font-bold">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-10 animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                    <Avatar className="h-14 w-14 bg-primary/10 text-primary border-2 border-primary/5 transition-transform hover:scale-105">
+                        <AvatarFallback className="text-2xl font-black">
                             {client.name.charAt(0)}
                         </AvatarFallback>
                     </Avatar>
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight">{client.name}</h1>
+                    <div className="space-y-0.5">
+                        <h1 className="text-3xl font-black tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">{client.name}</h1>
                         {client.company && (
-                            <p className="text-muted-foreground font-medium">{client.company}</p>
+                            <p className="text-muted-foreground font-bold flex items-center gap-2">
+                                <span className="h-1.5 w-1.5 rounded-full bg-primary/40" />
+                                {client.company}
+                            </p>
                         )}
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-muted-foreground pt-2">
-                    <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-6 mt-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2.5 bg-muted/30 px-3 py-1.5 rounded-full border border-border/40">
                         <IndianRupee className="h-4 w-4 text-emerald-600" />
-                        <span className="font-semibold text-foreground">{formatCurrency(client.deal_value)}</span>
-                        Deal Value
+                        <span className="font-bold text-foreground">{formatCurrency(client.deal_value)}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">Deal Value</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <CalendarDays className="h-4 w-4" />
-                        Added <span>{mounted ? createdDate : '...'}</span>
+                    <div className="flex items-center gap-2 px-1">
+                        <CalendarDays className="h-4 w-4 text-muted-foreground/70" />
+                        <span className="font-medium">Added <span className="text-foreground" suppressHydrationWarning>{mounted ? createdDate : '...'}</span></span>
                     </div>
                     {client.users && (
                         <div className="flex items-center gap-2">
-                            Assigned to
-                            <Badge variant="secondary" className="font-normal">
+                            <span className="text-[10px] font-bold uppercase tracking-widest">Ownership</span>
+                            <Badge variant="secondary" className="font-bold bg-primary/5 hover:bg-primary/10 text-primary border-primary/10 transition-colors">
                                 {client.users.name}
                             </Badge>
                         </div>
@@ -165,88 +139,23 @@ export function ClientHeader({ client }: { client: any }) {
                 </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-                <EditClientDialog client={client} />
+            <HeaderActions
+                currentStage={currentStage}
+                isUpdating={isUpdating}
+                isSharing={isSharing}
+                onStageChange={handleStageChange}
+                onShare={handleShareProgress}
+                onDeleteRequest={() => setDeleteOpen(true)}
+                editComponent={<EditClientDialog client={client} />}
+            />
 
-                <DropdownMenu>
-                    <DropdownMenuTrigger
-                        render={
-                            <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-                                <MoreVertical className="h-4 w-4" />
-                                <span className="sr-only">Open menu</span>
-                            </Button>
-                        }
-                    />
-                    <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuSub>
-                            <DropdownMenuSubTrigger className="gap-2">
-                                <ArrowRight className="h-4 w-4" />
-                                Transfer to Stage
-                            </DropdownMenuSubTrigger>
-                            <DropdownMenuSubContent className="w-48">
-                                {PIPELINE_STAGES.map((s) => (
-                                    <DropdownMenuItem
-                                        key={s.id}
-                                        disabled={currentStage === s.id || isUpdating}
-                                        onClick={() => handleStageChange(s.id)}
-                                    >
-                                        <span className="h-2 w-2 rounded-full mr-2" style={{ backgroundColor: s.color }} />
-                                        {s.name}
-                                    </DropdownMenuItem>
-                                ))}
-                            </DropdownMenuSubContent>
-                        </DropdownMenuSub>
-
-                        <DropdownMenuItem onClick={handleShareProgress} disabled={isSharing}>
-                            <Share2 className="mr-2 h-4 w-4" />
-                            {isSharing ? 'Sharing...' : 'Share Progress'}
-                        </DropdownMenuItem>
-
-                        <DropdownMenuSeparator />
-
-                        <DropdownMenuItem
-                            className="text-destructive focus:text-destructive group font-semibold"
-                            onClick={() => setDeleteOpen(true)}
-                        >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete Client
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-
-                {/* Delete Confirmation Dialog */}
-                <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-                    <DialogContent className="sm:max-w-sm">
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2 text-destructive">
-                                <AlertTriangle className="h-5 w-5" />
-                                Delete Client
-                            </DialogTitle>
-                            <DialogDescription>
-                                Are you sure you want to permanently delete <strong>{client.name}</strong>? This action cannot be undone.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <DialogFooter className="mt-2 text-right space-x-2">
-                            <Button
-                                variant="ghost"
-                                onClick={() => setDeleteOpen(false)}
-                                disabled={isDeleting}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                variant="destructive"
-                                onClick={handleDeleteClient}
-                                disabled={isDeleting}
-                                className="gap-2"
-                            >
-                                {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                                Delete Permanently
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            </div>
+            <DeleteClientDialog
+                open={deleteOpen}
+                onOpenChange={setDeleteOpen}
+                client={client}
+                onDelete={handleDeleteClient}
+                deleting={isDeleting}
+            />
         </div>
     )
 }

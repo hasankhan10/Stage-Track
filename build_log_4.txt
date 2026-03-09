@@ -1,0 +1,32 @@
+
+> stage-track@0.1.0 build
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local
+- Experiments (use with caution):
+  · optimizePackageImports
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+✓ Compiled successfully in 14.1s
+  Running TypeScript ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/19) ...
+  Generating static pages using 11 workers (4/19) 
+  Generating static pages using 11 workers (9/19) 
+  Generating static pages using 11 workers (14/19) 
+⨯ useSearchParams() should be wrapped in a suspense boundary at page "/portal". Read more: https://nextjs.org/docs/messages/missing-suspense-with-csr-bailout
+    at Q (M:\Stage Track\.next\server\chunks\ssr\node_modules_next_920e7746._.js:2:2111)
+    at o (M:\Stage Track\.next\server\chunks\ssr\node_modules_next_920e7746._.js:4:5284)
+    at w (M:\Stage Track\.next\server\chunks\ssr\[root-of-the-server]__b622c636._.js:1:22882)
+    at an (M:\Stage Track\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:84360)
+    at ai (M:\Stage Track\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:86179)
+    at al (M:\Stage Track\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:107953)
+    at as (M:\Stage Track\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:105368)
+    at aa (M:\Stage Track\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:84712)
+    at ai (M:\Stage Track\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:86228)
+    at ai (M:\Stage Track\node_modules\next\dist\compiled\next-server\app-page-turbo.runtime.prod.js:2:104708)
+Error occurred prerendering page "/portal". Read more: https://nextjs.org/docs/messages/prerender-error
+Export encountered an error on /portal/page: /portal, exiting the build.
+⨯ Next.js build worker exited with code: 1 and signal: null

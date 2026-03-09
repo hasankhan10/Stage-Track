@@ -158,16 +158,16 @@ export function Sidebar({
                 {collapsed ? (
                     <div className="w-full flex items-center justify-center">
                         <div className="h-8 w-8 relative flex items-center justify-center">
-                            <Image src="/logo.jpg" alt="Stova Media logo" fill className="object-contain" />
+                            <Image src="/logo.jpg" alt="Your Brand logo" fill className="object-contain" />
                         </div>
                     </div>
                 ) : (
                     <div className="flex items-center gap-3 overflow-hidden">
                         <div className="h-8 w-8 relative flex-shrink-0">
-                            <Image src="/logo.jpg" alt="Stova Media logo" fill className="object-contain" />
+                            <Image src="/logo.jpg" alt="Your Brand logo" fill className="object-contain" />
                         </div>
                         <div className="overflow-hidden">
-                            <p className="font-bold text-sm leading-tight text-foreground whitespace-nowrap">Stova Media</p>
+                            <p className="font-bold text-sm leading-tight text-foreground whitespace-nowrap">Your Brand</p>
                             <p className="text-[10px] text-muted-foreground whitespace-nowrap">Agency CRM</p>
                         </div>
                     </div>

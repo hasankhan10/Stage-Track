@@ -40,8 +40,7 @@ export function ProposalBuilder({ clients }: { clients: { id: string, name: stri
     const [isSaving, setIsSaving] = useState(false)
 
     const form = useForm<ProposalFormValues>({
-        // @ts-ignore
-        resolver: zodResolver(proposalSchema),
+        resolver: zodResolver(proposalSchema) as any,
         defaultValues: {
             client_id: searchParams.get('client') || '',
             title: '',

@@ -6,7 +6,7 @@ import { Toaster } from "@/components/ui/sonner";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Stova Media Agency | Client Management Platform",
+  title: "Your Brand Agency | Client Management Platform",
   description: "End-to-End Client Management Platform for Service Agencies",
 };
 

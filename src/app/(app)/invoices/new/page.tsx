@@ -2,7 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import { InvoiceBuilder } from '@/components/invoices/InvoiceBuilder'
 
-export const metadata = { title: 'Create Invoice | Stova Media' }
+export const metadata = { title: 'Create Invoice | Your Brand' }
 
 export default async function NewInvoicePage() {
     const supabase = await createClient()
