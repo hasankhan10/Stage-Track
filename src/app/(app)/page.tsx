@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 
 export const metadata = {
-  title: 'Dashboard | Your Brand',
+  title: 'Dashboard | Stova Media',
 }
 
 export default async function DashboardPage() {

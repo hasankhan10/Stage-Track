@@ -6,7 +6,7 @@ import { CalendarDays, CheckCircle2, Clock, AlertCircle } from 'lucide-react'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { cachedFetch, cacheTags } from '@/lib/cache'
 
-export const metadata = { title: 'Tasks | Your Brand' }
+export const metadata = { title: 'Tasks | Stova Media' }
 
 export default async function TasksPage() {
     const supabase = await createClient()

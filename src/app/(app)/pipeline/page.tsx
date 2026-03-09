@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { cachedFetch, cacheTags } from '@/lib/cache'
 
 export const metadata = {
-    title: 'Pipeline | Your Brand',
+    title: 'Pipeline | Stova Media',
     description: 'Manage your client pipeline across all stages',
 }
 

@@ -18,7 +18,7 @@ interface PortalHeaderProps {
     brandName?: string
 }
 
-export const PortalHeader = React.memo(({ status, isSigning, onAccept, brandName = "Your Brand" }: PortalHeaderProps) => {
+export const PortalHeader = React.memo(({ status, isSigning, onAccept, brandName = "Stova Media" }: PortalHeaderProps) => {
     return (
         <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200/60 transition-all">
             <div className="max-w-5xl mx-auto px-6 h-20 flex items-center justify-between">

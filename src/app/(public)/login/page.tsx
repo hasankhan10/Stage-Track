@@ -69,9 +69,9 @@ export default function LoginPage() {
             <Card className="w-full max-w-md">
                 <CardHeader className="space-y-2 text-center flex flex-col items-center">
                     <div className="h-16 w-16 relative mb-2">
-                        <Image src="/logo.jpg" alt="Your Brand logo" fill className="object-contain" />
+                        <Image src="/logo.jpg" alt="Stova Media logo" fill className="object-contain" />
                     </div>
-                    <CardTitle className="text-3xl font-bold tracking-tight text-primary">Your Brand</CardTitle>
+                    <CardTitle className="text-3xl font-bold tracking-tight text-primary">Stova Media</CardTitle>
                     <CardDescription>
                         Enter your credentials to access your workspace
                     </CardDescription>

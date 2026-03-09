@@ -6,7 +6,7 @@ import { cachedFetch, cacheTags } from '@/lib/cache'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyLog = any
 
-export const metadata = { title: 'Outreach | Your Brand' }
+export const metadata = { title: 'Outreach | Stova Media' }
 
 export default async function OutreachPage() {
     const supabase = await createClient()

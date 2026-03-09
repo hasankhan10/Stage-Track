@@ -5,7 +5,7 @@ import { ClientsListClient } from '@/components/clients/ClientsListClient'
 import { cachedFetch, cacheTags } from '@/lib/cache'
 
 export const metadata = {
-    title: 'Clients | Your Brand',
+    title: 'Clients | Stova Media',
     description: 'Full client directory — search, filter, and manage all your clients.',
 }
 

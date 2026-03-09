@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { cachedFetch, cacheTags } from '@/lib/cache'
 
-export const metadata = { title: 'Invoices | Your Brand' }
+export const metadata = { title: 'Invoices | Stova Media' }
 
 export default async function InvoicesPage() {
     const supabase = await createClient()

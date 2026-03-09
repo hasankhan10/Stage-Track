@@ -101,7 +101,7 @@ function PortalContent() {
     return (
         <div className="min-h-screen bg-[#FDFDFD] text-slate-900 pb-20 selection:bg-primary/10 font-sans">
             <PortalHeader
-                brandName="Your Brand"
+                brandName="Stova Media"
                 status={proposal.status}
                 isSigning={isSigning}
                 onAccept={handleAccept}

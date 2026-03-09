@@ -80,7 +80,7 @@ export async function POST(
             await resend.emails.send({
                 from: 'billing@stovamedia.com',
                 to: invoice.clients.email,
-                subject: `Invoice ${invoice.invoice_number} from Your Brand`,
+                subject: `Invoice ${invoice.invoice_number} from Stova Media`,
                 html: `
           <h1>Hello ${invoice.clients.name},</h1>
           <p>Your invoice <strong>${invoice.invoice_number}</strong> is ready.</p>
