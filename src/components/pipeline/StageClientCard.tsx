@@ -19,6 +19,7 @@ interface StageClientCardProps {
     client: Client
     nextStage: PipelineStage | undefined
     mounted: boolean
+    isAdmin?: boolean
     onTransfer: (client: Client, newStageId: number) => void
     onUpdateStatus: (clientId: string, status: string) => void
     onOpenNote: (client: Client) => void
@@ -29,6 +30,7 @@ export const StageClientCard = React.memo(({
     client,
     nextStage,
     mounted,
+    isAdmin = false,
     onTransfer,
     onUpdateStatus,
     onOpenNote,
@@ -109,14 +111,18 @@ export const StageClientCard = React.memo(({
                                 ))}
                             </DropdownMenuSubContent>
                         </DropdownMenuSub>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                            className="text-destructive focus:text-destructive font-semibold"
-                            onClick={() => onDeleteRequest(client)}
-                        >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Delete Client
-                        </DropdownMenuItem>
+                        {isAdmin && (
+                            <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive font-semibold"
+                                    onClick={() => onDeleteRequest(client)}
+                                >
+                                    <Trash2 className="h-4 w-4 mr-1" />
+                                    Delete Client
+                                </DropdownMenuItem>
+                            </>
+                        )}
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>

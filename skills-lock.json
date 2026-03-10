@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "skills": {
+    "nextjs16-skills": {
+      "source": "gocallum/nextjs16-agent-skills",
+      "sourceType": "github",
+      "computedHash": "80fe177f4f80c22606a16952a65e06f73c87d40f5d082d0f9cec4725f103dd41"
+    },
+    "supermemory": {
+      "source": "supermemoryai/supermemory",
+      "sourceType": "github",
+      "computedHash": "d1ab1709b0823bfb60130bac832ca0f8434627261601c9aa33768bfcb56b8c78"
+    }
+  }
+}

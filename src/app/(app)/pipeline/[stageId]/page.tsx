@@ -25,6 +25,14 @@ export default async function StageDetailPage({ params }: Props) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return redirect('/login')
 
+    const { data: profile } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+    const isAdmin = profile?.role === 'admin'
+
     const stage = PIPELINE_STAGES.find(s => s.id === id)
     if (!stage) return notFound()
 
@@ -79,7 +87,7 @@ export default async function StageDetailPage({ params }: Props) {
             </div>
 
             {/* Main Content */}
-            <StageDetailClient stageId={id} />
+            <StageDetailClient stageId={id} isAdmin={isAdmin} />
         </div>
     )
 }

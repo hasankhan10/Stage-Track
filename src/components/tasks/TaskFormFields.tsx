@@ -11,6 +11,10 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Flag, Calendar, User, Briefcase, FileText } from 'lucide-react'
 
 interface TaskFormFieldsProps {
@@ -141,27 +145,63 @@ export const TaskFormFields = React.memo(({ form, clients, users, defaultClientI
                 <FormField
                     control={form.control}
                     name="assigned_to"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 flex items-center gap-1.5">
-                                <User className="h-3 w-3" /> Responsible Party
-                            </FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                    <SelectTrigger className="h-11 rounded-xl border-border/60 font-bold">
-                                        <SelectValue placeholder="Assign operative" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent className="rounded-xl shadow-premium border-border/40">
-                                    <SelectItem value="none" className="font-bold text-muted-foreground">Unassigned</SelectItem>
-                                    {users.map(u => (
-                                        <SelectItem key={u.id} value={u.id} className="focus:bg-primary/5 font-medium">{u.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
+                    render={({ field }) => {
+                        const allUsers = [{ id: 'none', name: 'Unassigned' }, ...users]
+                        const values = Array.isArray(field.value) ? field.value : []
+                        return (
+                            <FormItem>
+                                <FormLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 flex items-center gap-1.5">
+                                    <User className="h-3 w-3" /> Responsible Party
+                                </FormLabel>
+                                <Popover>
+                                    <FormControl>
+                                        <PopoverTrigger className="flex h-11 w-[300px] sm:w-full items-center justify-between rounded-xl border border-border/60 bg-background px-3 py-2 text-sm font-bold shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 hover:bg-slate-50 transition-colors">
+                                            {values.length === 0 ? "Assign operative" : (
+                                                <div className="flex gap-1 overflow-x-hidden max-w-[200px]">
+                                                    {values.map((val: string) => (
+                                                        <Badge variant="secondary" key={val} className="text-[10px] truncate">
+                                                            {allUsers.find(u => u.id === val)?.name || val}
+                                                        </Badge>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </PopoverTrigger>
+                                    </FormControl>
+                                    <PopoverContent className="w-[300px] p-0 rounded-xl shadow-premium border-border/40" align="start">
+                                        <div className="p-3 border-b border-border/40 font-bold text-xs text-muted-foreground uppercase tracking-widest">Select Operatives</div>
+                                        <ScrollArea className="max-h-[250px] p-2">
+                                            <div className="flex flex-col gap-1">
+                                                {allUsers.map(u => {
+                                                    const isSelected = values.includes(u.id)
+                                                    return (
+                                                        <div
+                                                            key={u.id}
+                                                            className="flex flex-row items-center space-x-3 rounded-lg p-2.5 hover:bg-primary/5 cursor-pointer transition-colors"
+                                                            onClick={() => {
+                                                                const current = new Set(values)
+                                                                if (u.id === 'none') {
+                                                                    field.onChange(['none'])
+                                                                    return
+                                                                }
+                                                                current.delete('none')
+                                                                if (current.has(u.id)) current.delete(u.id)
+                                                                else current.add(u.id)
+                                                                if (current.size === 0) current.add('none')
+                                                                field.onChange(Array.from(current))
+                                                            }}>
+                                                            <Checkbox checked={isSelected} className="rounded-md" />
+                                                            <div className="font-semibold text-sm leading-none">{u.name}</div>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        </ScrollArea>
+                                    </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                            </FormItem>
+                        )
+                    }}
                 />
             </div>
         </div>

@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { createClient } from '@/utils/supabase/client'
+import { invalidateTasks } from '@/app/(app)/tasks/actions'
 import {
     Dialog,
     DialogContent,
@@ -27,7 +28,7 @@ const taskSchema = z.object({
     priority: z.string(),
     due_date: z.string().optional(),
     client_id: z.string().optional(),
-    assigned_to: z.string().optional(),
+    assigned_to: z.array(z.string()).min(1, 'Select at least one assignee'),
 })
 
 type TaskFormValues = z.infer<typeof taskSchema>
@@ -51,7 +52,8 @@ export function CreateTaskDialog({ clients = [], users = [], defaultClientId, ch
             description: '',
             priority: 'Medium',
             client_id: defaultClientId || 'none',
-            assigned_to: 'none',
+            assigned_to: ['none'],
+            due_date: '',
         },
     })
 
@@ -68,25 +70,43 @@ export function CreateTaskDialog({ clients = [], users = [], defaultClientId, ch
 
             if (!profile) throw new Error('Profile not found')
 
-            const newTask = {
+            const assignees = data.assigned_to.map(id => id === 'none' ? userData.user.id : id)
+            const uniqueAssignees = Array.from(new Set(assignees))
+
+            const parentTasks = uniqueAssignees.map(assigneeId => ({
                 title: data.title,
                 description: data.description,
                 priority: data.priority,
-                status: 'Pending',
+                status: 'todo',
                 due_date: data.due_date ? new Date(data.due_date).toISOString() : null,
                 client_id: data.client_id !== 'none' ? data.client_id : null,
-                assigned_to: data.assigned_to !== 'none' ? data.assigned_to : userData.user.id,
+                assigned_to: assigneeId,
                 workspace_id: profile.workspace_id,
                 created_by: userData.user.id,
-            }
+            }))
 
-            const { error } = await supabase.from('tasks').insert(newTask)
+            const { error } = await supabase.from('tasks').insert(parentTasks)
             if (error) throw error
+
+            const notifications = parentTasks
+                .filter(t => t.assigned_to !== userData.user.id)
+                .map(t => ({
+                    user_id: t.assigned_to,
+                    workspace_id: profile.workspace_id,
+                    title: 'New Task Assigned',
+                    message: `You have been assigned: ${t.title}`,
+                    type: 'task',
+                    link: '/tasks'
+                }))
+
+            if (notifications.length > 0) {
+                await supabase.from('notifications').insert(notifications)
+            }
 
             toast.success('Task Objective Synced')
             setOpen(false)
             form.reset()
-            router.refresh()
+            await invalidateTasks()
         } catch (error: any) {
             toast.error(error.message || 'Failed to sync task')
         }

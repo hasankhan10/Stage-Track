@@ -14,9 +14,10 @@ import { useStageClients } from './hooks'
 
 interface StageDetailClientProps {
     stageId: number
+    isAdmin?: boolean
 }
 
-export function StageDetailClient({ stageId }: StageDetailClientProps) {
+export function StageDetailClient({ stageId, isAdmin = false }: StageDetailClientProps) {
     const {
         stage, nextStage, clients, loading, submitting, form, setForm,
         handleAddClient, updateStatus, transferClient, handleDeleteClient, saveNote
@@ -119,6 +120,7 @@ export function StageDetailClient({ stageId }: StageDetailClientProps) {
                             client={client}
                             nextStage={nextStage}
                             mounted={mounted}
+                            isAdmin={isAdmin}
                             onTransfer={transferClient}
                             onUpdateStatus={updateStatus}
                             onOpenNote={(c) => {
