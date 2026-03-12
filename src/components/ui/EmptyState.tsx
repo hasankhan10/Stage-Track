@@ -34,10 +34,8 @@ export function EmptyState({
 
             <div className="flex gap-3">
                 {ctaLabel && ctaHref && (
-                    <Button asChild size="lg" className="shadow-lg shadow-primary/20">
-                        <Link href={ctaHref}>
-                            {ctaLabel}
-                        </Link>
+                    <Button render={<Link href={ctaHref} />} size="lg" className="shadow-lg shadow-primary/20">
+                        {ctaLabel}
                     </Button>
                 )}
 

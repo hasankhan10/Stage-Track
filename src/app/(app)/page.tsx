@@ -96,8 +96,8 @@ export default async function DashboardPage() {
                 </CardTitle>
                 <CardDescription>Key updates across your workspace</CardDescription>
               </div>
-              <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80 gap-1 font-semibold" asChild>
-                <Link href="/analytics">Full Report <ArrowRight className="h-4 w-4" /></Link>
+              <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80 gap-1 font-semibold" render={<Link href="/analytics" />}>
+                Full Report <ArrowRight className="h-4 w-4" />
               </Button>
             </CardHeader>
             <CardContent className="p-0">
@@ -205,8 +205,8 @@ export default async function DashboardPage() {
                   <p className="text-sm">No pending tasks.</p>
                 </div>
               )}
-              <Button variant="outline" className="w-full text-xs font-bold" asChild>
-                <Link href="/tasks">View All Tasks</Link>
+              <Button variant="outline" className="w-full text-xs font-bold" render={<Link href="/tasks" />}>
+                View All Tasks
               </Button>
             </CardContent>
           </Card>

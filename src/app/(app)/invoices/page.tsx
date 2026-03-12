@@ -44,11 +44,9 @@ export default async function InvoicesPage() {
                     <h2 className="text-3xl font-bold tracking-tight text-primary">Invoices</h2>
                     <p className="text-muted-foreground">Manage billing, collect payments via Stripe.</p>
                 </div>
-                <Button asChild>
-                    <Link href="/invoices/new">
-                        <FilePlus className="mr-2 h-4 w-4" />
-                        Create Invoice
-                    </Link>
+                <Button render={<Link href="/invoices/new" />}>
+                    <FilePlus className="mr-2 h-4 w-4" />
+                    Create Invoice
                 </Button>
             </div>
 
