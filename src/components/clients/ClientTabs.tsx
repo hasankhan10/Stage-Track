@@ -23,8 +23,8 @@ import { LogOutreachDialog } from '@/components/outreach/LogOutreachDialog'
 import { FileList } from '@/components/files/FileList'
 import { FileUploader } from '@/components/files/FileUploader'
 import { MilestoneTracker } from '@/components/projects/MilestoneTracker'
-import { ClientProposals } from '@/components/clients/ClientProposals'
-import { ClientInvoices } from '@/components/clients/ClientInvoices'
+import { DocumentEmailForm } from '@/components/clients/DocumentEmailForm'
+import { ClientNotes } from '@/components/clients/ClientNotes'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 
@@ -131,7 +131,15 @@ export function ClientTabs({ client }: { client: any }) {
             </TabsContent>
 
             <TabsContent value="proposals" className="mt-0">
-                {visitedTabs.has('proposals') && <ClientProposals clientId={client.id} />}
+                {visitedTabs.has('proposals') && (
+                    <div className="max-w-2xl mx-auto py-8">
+                        <div className="mb-8">
+                            <h3 className="text-xl font-bold">Email Proposal</h3>
+                            <p className="text-muted-foreground text-sm">Send a professional proposal directly to {client.name}.</p>
+                        </div>
+                        <DocumentEmailForm clientId={client.id} clientName={client.name} type="Proposal" />
+                    </div>
+                )}
             </TabsContent>
 
             <TabsContent value="contracts" className="mt-0">
@@ -145,7 +153,15 @@ export function ClientTabs({ client }: { client: any }) {
             </TabsContent>
 
             <TabsContent value="invoices" className="mt-0">
-                {visitedTabs.has('invoices') && <ClientInvoices clientId={client.id} />}
+                {visitedTabs.has('invoices') && (
+                    <div className="max-w-2xl mx-auto py-8">
+                        <div className="mb-8">
+                            <h3 className="text-xl font-bold">Email Invoice</h3>
+                            <p className="text-muted-foreground text-sm">Send a PDF invoice directly to {client.name}.</p>
+                        </div>
+                        <DocumentEmailForm clientId={client.id} clientName={client.name} type="Invoice" />
+                    </div>
+                )}
             </TabsContent>
 
             <TabsContent value="files" className="mt-0 space-y-6">
@@ -179,13 +195,7 @@ export function ClientTabs({ client }: { client: any }) {
 
             <TabsContent value="notes" className="mt-0">
                 {visitedTabs.has('notes') && (
-                    <EmptyState
-                        icon={AlignLeft}
-                        title="No Notes"
-                        description="Keep internal team notes about this client."
-                        ctaLabel="Add Note"
-                        ctaAction={() => { }}
-                    />
+                    <ClientNotes client={client} />
                 )}
             </TabsContent>
 

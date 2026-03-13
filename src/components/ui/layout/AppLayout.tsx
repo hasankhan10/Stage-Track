@@ -69,7 +69,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
             <div className="flex flex-col flex-1 h-screen overflow-hidden">
                 <Navbar onMenuClick={() => setIsMobileMenuOpen(true)} />
-                <main className="flex-1 overflow-y-auto bg-muted/20 p-4 md:p-6 lg:p-8">
+                <main className="flex-1 overflow-y-auto bg-muted/20 p-4 md:p-6 lg:p-8" suppressHydrationWarning>
                     <div className="mx-auto max-w-7xl w-full">
                         {children}
                     </div>

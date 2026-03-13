@@ -39,7 +39,7 @@ export function Navbar({ onMenuClick }: { onMenuClick?: () => void }) {
     }
 
     return (
-        <header className="sticky top-0 z-30 flex h-16 w-full items-center gap-4 border-b bg-background px-4 sm:px-6">
+        <header className="sticky top-0 z-30 flex h-16 w-full items-center gap-4 border-b bg-background px-4 sm:px-6" suppressHydrationWarning>
             {/* Mobile Menu Toggle */}
             <Button
                 variant="ghost"

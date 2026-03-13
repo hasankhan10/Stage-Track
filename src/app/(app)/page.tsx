@@ -145,36 +145,7 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Link href="/invoices/new" className="group">
-              <Card className="hover:border-primary/50 transition-all hover:bg-muted/20 border-border/50">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="h-12 w-12 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600">
-                      <TrendingUp className="h-6 w-6" />
-                    </div>
-                    <ArrowUpRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </div>
-                  <h3 className="mt-4 font-bold text-lg">Send Invoice</h3>
-                  <p className="text-sm text-muted-foreground">Get paid faster by creating a professional invoice.</p>
-                </CardContent>
-              </Card>
-            </Link>
-            <Link href="/proposals/new" className="group">
-              <Card className="hover:border-primary/50 transition-all hover:bg-muted/20 border-border/50">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="h-12 w-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
-                      <FileText className="h-6 w-6" />
-                    </div>
-                    <ArrowUpRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </div>
-                  <h3 className="mt-4 font-bold text-lg">New Proposal</h3>
-                  <p className="text-sm text-muted-foreground">Create a high-converting proposal for a prospect.</p>
-                </CardContent>
-              </Card>
-            </Link>
-          </div>
+
         </div>
 
         <div className="space-y-8">

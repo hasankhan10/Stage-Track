@@ -32,11 +32,7 @@ const coreNavItems = [
     { name: 'Tasks', href: '/tasks', icon: CheckSquare },
 ]
 
-// Business documents — visible to all
-const docsNavItems = [
-    { name: 'Proposals', href: '/proposals', icon: FileText },
-    { name: 'Invoices', href: '/invoices', icon: ReceiptText },
-]
+// Admin-only items
 
 // Admin-only items
 const adminNavItems = [
@@ -152,6 +148,7 @@ export function Sidebar({
                 collapsed ? "w-[70px]" : "w-64",
                 isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
             )}
+            suppressHydrationWarning
         >
             {/* Logo */}
             <div className="flex h-14 items-center flex-shrink-0 px-3 border-b">
@@ -177,7 +174,6 @@ export function Sidebar({
             {/* Navigation */}
             <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
                 <NavSection items={coreNavItems} label="Workspace" collapsed={collapsed} pathname={pathname} />
-                <NavSection items={docsNavItems} label="Documents" collapsed={collapsed} pathname={pathname} />
                 {isAdmin && (
                     <NavSection items={adminNavItems} label="Admin" collapsed={collapsed} pathname={pathname} />
                 )}

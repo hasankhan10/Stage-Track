@@ -99,7 +99,7 @@ export function ClientHeader({ client }: { client: any }) {
     }, [client.id, supabase, router])
 
     return (
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-10 animate-in fade-in slide-in-from-top-4 duration-500">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-10 animate-in fade-in slide-in-from-top-4 duration-500" suppressHydrationWarning>
             <div className="space-y-4">
                 <div className="flex items-center gap-4">
                     <Avatar className="h-14 w-14 bg-primary/10 text-primary border-2 border-primary/5 transition-transform hover:scale-105">
